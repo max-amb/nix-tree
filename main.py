@@ -184,7 +184,8 @@ class Decomposer:
         while equals_location <= len(equals_locations)-1:
             match rest_of_file[equals_locations[equals_location] + 1]:
                 case "[":
-                    iterator.prepend += rest_of_file[equals_locations[equals_location] - 1]  # Should not be an index error unless the Nix file is invalid
+                    iterator.prepend += rest_of_file[equals_locations[equals_location] - 1] + "."
+                    # Should not be an index error unless the Nix file is invalid
                     in_the_brackets: list = []
                     for phrase_itr in range(equals_locations[equals_location]+2, len(rest_of_file)):
                         if rest_of_file[phrase_itr] == "];":
@@ -192,10 +193,22 @@ class Decomposer:
                         else:
                             in_the_brackets.append(rest_of_file[phrase_itr])
                     for list_item in in_the_brackets:
-                        self.__tree.add_branch(iterator.prepend+"."+list_item, True)
+                        self.__tree.add_branch(iterator.prepend+list_item, True)
                     iterator.prepend = iterator.previous_prepend
-
+                case "with":
+                    iterator.prepend += rest_of_file[equals_locations[equals_location] - 1] + "."
+                    iterator.prepend += rest_of_file[equals_locations[equals_location] + 2] + "."
+                    in_the_brackets: list = []
+                    for phrase_itr in range(equals_locations[equals_location]+5, len(rest_of_file)):
+                        if rest_of_file[phrase_itr] == "];":
+                            break
+                        else:
+                            in_the_brackets.append(rest_of_file[phrase_itr])
+                    for list_item in in_the_brackets:
+                        self.__tree.add_branch(iterator.prepend+list_item, True)
+                    iterator.prepend = iterator.previous_prepend
             equals_location += 1
+
 
     def __finding_equals_signs(self, file: list) -> list:
         locations: list = []
@@ -209,6 +222,7 @@ class Decomposer:
         file = re.sub("=", " = ", file)
         file = re.sub("}", " } ", file)
         file = re.sub("{", " { ", file)
+        file = re.sub(";", " ; ", file) # For with clauses
         file = re.sub(r"}\s*;", "}; ", file)
         file = re.sub(r"]\s*;", "]; ", file)
         file = re.sub(r"\s+", " ", file)
