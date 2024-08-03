@@ -9,6 +9,7 @@ class Iterator:
     equals_number: int = 0
     prepend: str = ""
     previous_prepend: str = ""
+    character_number: int = 0
 
 
 class CommentHandling:
@@ -177,17 +178,22 @@ class Decomposer:
         iterator = Iterator()
         rest_of_file: str = self.__cleaning_the_configuration(self.__full_file[self.__full_file.index("}") + 1:])
         groups = self.__forming_groups_dict(rest_of_file)
+        print(groups)
         rest_of_file: list = rest_of_file.split(" ")
         equals_locations: list = self.__finding_equals_signs(rest_of_file)
         iterator.previous_prepend = ""
-        equals_location = 0
-        while equals_location <= len(equals_locations)-1:
-            match rest_of_file[equals_locations[equals_location] + 1]:
+
+        while iterator.equals_number <= len(equals_locations)-1:
+            match rest_of_file[equals_locations[iterator.equals_number] + 1]:
+                case "{":
+                    for group in groups.items():
+                        if group[1][0] < equals_locations[iterator.equals_number] < group[1][1]:
+                            print("HI")
                 case "[":
-                    iterator.prepend += rest_of_file[equals_locations[equals_location] - 1] + "."
+                    iterator.prepend += rest_of_file[equals_locations[iterator.equals_number] - 1] + "."
                     # Should not be an index error unless the Nix file is invalid
                     in_the_brackets: list = []
-                    for phrase_itr in range(equals_locations[equals_location]+2, len(rest_of_file)):
+                    for phrase_itr in range(equals_locations[iterator.equals_number]+2, len(rest_of_file)):
                         if rest_of_file[phrase_itr] == "];":
                             break
                         else:
@@ -196,10 +202,10 @@ class Decomposer:
                         self.__tree.add_branch(iterator.prepend+list_item, True)
                     iterator.prepend = iterator.previous_prepend
                 case "with":
-                    iterator.prepend += rest_of_file[equals_locations[equals_location] - 1] + "."
-                    iterator.prepend += rest_of_file[equals_locations[equals_location] + 2] + "."
+                    iterator.prepend += rest_of_file[equals_locations[iterator.equals_number] - 1] + "."
+                    iterator.prepend += rest_of_file[equals_locations[iterator.equals_number] + 2] + "."
                     in_the_brackets: list = []
-                    for phrase_itr in range(equals_locations[equals_location]+5, len(rest_of_file)):
+                    for phrase_itr in range(equals_locations[iterator.equals_number]+5, len(rest_of_file)):
                         if rest_of_file[phrase_itr] == "];":
                             break
                         else:
@@ -207,7 +213,12 @@ class Decomposer:
                     for list_item in in_the_brackets:
                         self.__tree.add_branch(iterator.prepend+list_item, True)
                     iterator.prepend = iterator.previous_prepend
-            equals_location += 1
+                case _:  # Then it is a variable
+                    iterator.prepend += rest_of_file[equals_locations[iterator.equals_number] - 1] + "."
+                    self.__tree.add_branch(iterator.prepend+rest_of_file[equals_locations[iterator.equals_number] + 1], True)
+                    iterator.prepend = iterator.previous_prepend
+            iterator.equals_number += 1
+
 
 
     def __finding_equals_signs(self, file: list) -> list:
@@ -222,7 +233,7 @@ class Decomposer:
         file = re.sub("=", " = ", file)
         file = re.sub("}", " } ", file)
         file = re.sub("{", " { ", file)
-        file = re.sub(";", " ; ", file) # For with clauses
+        file = re.sub(";", " ; ", file)  # For with clauses
         file = re.sub(r"}\s*;", "}; ", file)
         file = re.sub(r"]\s*;", "]; ", file)
         file = re.sub(r"\s+", " ", file)
@@ -238,7 +249,7 @@ class Decomposer:
             character_iterator += len(split_file[phrase_itr])
             if split_file[phrase_itr] == "{":
                 stack.push((split_file[phrase_itr - 2], (character_iterator, 0)))
-            if split_file[phrase_itr] == "}":
+            if split_file[phrase_itr] == "};":
                 entry = stack.pop()
                 starting_point = entry[1][0]
                 new_entry_one = (starting_point, character_iterator)
