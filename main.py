@@ -137,24 +137,37 @@ class Decomposer:
         self.__managing_the_rest_of_the_file()
 
     def get_tree(self) -> Tree:
-        """Get the current tree maintained by the decomposer"""
+        """Get the current tree maintained by the decomposer
+
+        Args:
+
+        Returns:
+            None
+        """
         return self.__tree
 
     def set_tree(self, new_tree: Tree) -> None:
-        """Set the tree in the decomposer"""
+        """Set the tree in the decomposer
+
+        Args:
+
+        Returns:
+            None
+        """
         self.__tree = new_tree
 
     def __reading_the_full_file(self, comment_handling: CommentHandling) -> None:
         """Opens the file and reads it all into one string, possible due to Nix not relying on indentations
 
+        Args:
+            comment_handling: CommentHandling - The comment handling object to retrieve a version of the file that
+            does not contain comments
+
+        Returns:
+            None
+
         Note:
             This is done to make the file easier to interpret
-
-        self.__full_file: str = ""
-        with self.__file_path.open(mode='r') as configuration_file:
-            lines = configuration_file.readlines()
-            for line in lines:
-                self.__full_file = self.__full_file + line.replace("\n", " ")
         """
         self.__full_file: str = ""
         lines = comment_handling.get_file_without_comments()
@@ -164,16 +177,29 @@ class Decomposer:
     def __managing_headers(self) -> None:
         """Adds headers to the tree
 
+        Args:
+
+        Returns:
+            None
+
         Note:
             Works due to string.index providing the first occurrence - the headers in a Nix file
-
         """
         string_in_headers: str = self.__full_file[self.__full_file.index("{") + 1:self.__full_file.index("}")]
         for header in string_in_headers.split(","):
             self.__tree.add_branch(contents=f"headers.{header.strip()}", is_var=True)
 
     def __managing_the_rest_of_the_file(self) -> None:
-        """Splits the rest of the file into their tokens and adds to the tree"""
+        """Splits the rest of the file into their tokens and adds to the tree
+
+        Args:
+
+        Returns:
+            None
+
+        Note:
+            Check the flowchart in the writeup to learn more about this!
+        """
         iterator = Iterator()
         rest_of_file: str = self.__cleaning_the_configuration(self.__full_file[self.__full_file.index("}") + 1:])
         groups = self.__forming_groups_dict(rest_of_file)
@@ -220,6 +246,18 @@ class Decomposer:
             iterator.equals_number += 1
 
     def __finding_equals_signs(self, file: list) -> list:
+        """Iterates through the file - split on spaces - to find the equals signs positions
+
+        Args:
+            file: list - The list containing the split configuration file
+
+        Returns:
+            locations: list - A list containing all the locations of the equals in the file
+
+        Note:
+            The tuples used in the locations list allow for the equals locations to be used when the file is split and
+            when it is not split
+        """
         locations: list = []
         char_location = 0
         for phrase_itr in range(len(file)):
@@ -229,6 +267,14 @@ class Decomposer:
         return locations
 
     def __cleaning_the_configuration(self, file: str) -> str:
+        """This cleans the configuration with regex substitution to make it possible to tokenize
+
+        Args:
+            file: str - the file all on one line
+
+        Returns:
+            file: str - the file all on one line now cleaned
+        """
         file = re.sub(r"\s+", " ", file)
         file = re.sub("=", " = ", file)
         file = re.sub("}", " } ", file)
@@ -240,7 +286,15 @@ class Decomposer:
         return file
 
     def __forming_groups_dict(self, file: str) -> dict[str, tuple[int, int]]:
-        """Forms the groups dictionary which contains all the groups within the config file"""
+        """Forms the groups dictionary which contains all the groups and their sections
+
+        Args:
+            file: str - The configuration file all on one line
+
+        Returns:
+            groups: dict[str, tuple[int, int]] - The groups dictionary - sorted due to passing it through the
+            function before returning
+        """
         groups: dict[str, tuple[int, int]] = {}
         stack = Stack()
         character_iterator = 0
@@ -257,6 +311,14 @@ class Decomposer:
         return self.__sort_groups(groups)
 
     def __sort_groups(self, groups: dict[str, tuple[int, int]]) -> dict[str, tuple[int, int]]:
+        """Sorts the groups based on size in descending order
+
+        Args:
+            groups: dict[str, tuple[int, int]] - The groups passed in - unarranged
+
+        Returns:
+            new_groups: dict[str, tuple[int, int]] - The groups now sorted with the largest width first
+        """
         new_groups: dict[str, tuple[int, int]] = {}
         while len(groups) > 0:
             maximum_size: int = 0  # To get infinity in python
@@ -277,9 +339,6 @@ def main():
 
     Returns:
         None
-
-    Raises:
-        x
     """
     Decomposer(file_path=Path("/home/max/nea/NEA/configuration.nix"))
 
