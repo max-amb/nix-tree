@@ -9,7 +9,6 @@ class Iterator:
     equals_number: int = 0
     prepend: str = ""
     previous_prepend: str = ""
-    character_number: int = 0
 
 
 class CommentHandling:
@@ -178,34 +177,35 @@ class Decomposer:
         iterator = Iterator()
         rest_of_file: str = self.__cleaning_the_configuration(self.__full_file[self.__full_file.index("}") + 1:])
         groups = self.__forming_groups_dict(rest_of_file)
-        print(groups)
         rest_of_file: list = rest_of_file.split(" ")
         equals_locations: list = self.__finding_equals_signs(rest_of_file)
         iterator.previous_prepend = ""
 
         while iterator.equals_number <= len(equals_locations)-1:
-            match rest_of_file[equals_locations[iterator.equals_number] + 1]:
+            for group in groups.items():
+                if group[1][0] < equals_locations[iterator.equals_number][0] + 2 < group[1][1]:
+                    # +2 due to the equals being before the group in theory, hence it wouldn't work
+                    iterator.prepend += group[0] + "."
+            match rest_of_file[equals_locations[iterator.equals_number][1] + 1]:
                 case "{":
-                    for group in groups.items():
-                        if group[1][0] < equals_locations[iterator.equals_number] < group[1][1]:
-                            print("HI")
+                    pass  # To stop brackets being added as variables
                 case "[":
-                    iterator.prepend += rest_of_file[equals_locations[iterator.equals_number] - 1] + "."
+                    iterator.prepend += rest_of_file[equals_locations[iterator.equals_number][1] - 1] + "="
                     # Should not be an index error unless the Nix file is invalid
                     in_the_brackets: list = []
-                    for phrase_itr in range(equals_locations[iterator.equals_number]+2, len(rest_of_file)):
+                    for phrase_itr in range(equals_locations[iterator.equals_number][1]+2, len(rest_of_file)):
                         if rest_of_file[phrase_itr] == "];":
                             break
                         else:
                             in_the_brackets.append(rest_of_file[phrase_itr])
                     for list_item in in_the_brackets:
-                        self.__tree.add_branch(iterator.prepend+list_item, True)
+                        self.__tree.add_branch(iterator.prepend+list_item, False)
                     iterator.prepend = iterator.previous_prepend
                 case "with":
-                    iterator.prepend += rest_of_file[equals_locations[iterator.equals_number] - 1] + "."
-                    iterator.prepend += rest_of_file[equals_locations[iterator.equals_number] + 2] + "."
+                    iterator.prepend += rest_of_file[equals_locations[iterator.equals_number][1] - 1] + "."
+                    iterator.prepend += rest_of_file[equals_locations[iterator.equals_number][1] + 2] + "="
                     in_the_brackets: list = []
-                    for phrase_itr in range(equals_locations[iterator.equals_number]+5, len(rest_of_file)):
+                    for phrase_itr in range(equals_locations[iterator.equals_number][1]+5, len(rest_of_file)):
                         if rest_of_file[phrase_itr] == "];":
                             break
                         else:
@@ -214,18 +214,18 @@ class Decomposer:
                         self.__tree.add_branch(iterator.prepend+list_item, True)
                     iterator.prepend = iterator.previous_prepend
                 case _:  # Then it is a variable
-                    iterator.prepend += rest_of_file[equals_locations[iterator.equals_number] - 1] + "."
-                    self.__tree.add_branch(iterator.prepend+rest_of_file[equals_locations[iterator.equals_number] + 1], True)
+                    iterator.prepend += rest_of_file[equals_locations[iterator.equals_number][1] - 1] + "="
+                    self.__tree.add_branch(iterator.prepend+rest_of_file[equals_locations[iterator.equals_number][1] + 1], True)
                     iterator.prepend = iterator.previous_prepend
             iterator.equals_number += 1
 
-
-
     def __finding_equals_signs(self, file: list) -> list:
         locations: list = []
+        char_location = 0
         for phrase_itr in range(len(file)):
+            char_location += len(file[phrase_itr])
             if file[phrase_itr] == "=":
-                locations.append(phrase_itr)
+                locations.append((char_location, phrase_itr))
         return locations
 
     def __cleaning_the_configuration(self, file: str) -> str:
