@@ -1,3 +1,4 @@
+"""The main python file!"""
 from pathlib import Path
 import re
 from stack import Stack
@@ -135,6 +136,7 @@ class Decomposer:
         self.__reading_the_full_file(comment_handling)
         self.__managing_headers()
         self.__managing_the_rest_of_the_file()
+        self.__tree.quick_display(self.__tree.get_root())
 
     def get_tree(self) -> Tree:
         """Get the current tree maintained by the decomposer
@@ -187,7 +189,7 @@ class Decomposer:
         """
         string_in_headers: str = self.__full_file[self.__full_file.index("{") + 1:self.__full_file.index("}")]
         for header in string_in_headers.split(","):
-            self.__tree.add_branch(contents=f"headers.{header.strip()}", is_var=True)
+            self.__tree.add_branch(contents=f"headers={header.strip()}", is_list=False)
 
     def __managing_the_rest_of_the_file(self) -> None:
         """Splits the rest of the file into their tokens and adds to the tree
@@ -208,50 +210,56 @@ class Decomposer:
         iterator.previous_prepend = ""
 
         while iterator.equals_number <= len(equals_locations) - 1:
-            for group in groups.items():
-                if group[1][0] < equals_locations[iterator.equals_number][0] + 2 < group[1][1]:
-                    # +2 due to the equals being before the group in theory, hence it wouldn't work
-                    iterator.prepend += group[0] + "."
             match rest_of_file[equals_locations[iterator.equals_number][1] + 1]:
                 case "{":
                     pass  # To stop brackets being added as variables
                 case "[":
+                    iterator.prepend += self.__checking_group(groups, equals_locations[iterator.equals_number][0])
                     iterator.prepend += rest_of_file[equals_locations[iterator.equals_number][1] - 1] + "="
                     # Should not be an index error unless the Nix file is invalid
                     in_the_brackets: list = []
                     for phrase_itr in range(equals_locations[iterator.equals_number][1] + 2, len(rest_of_file)):
                         if rest_of_file[phrase_itr] == "];":
                             break
-                        else:
-                            in_the_brackets.append(rest_of_file[phrase_itr])
+                        in_the_brackets.append(rest_of_file[phrase_itr])
                     for list_item in in_the_brackets:
-                        self.__tree.add_branch(iterator.prepend + list_item, False)
+                        self.__tree.add_branch(iterator.prepend + list_item, True)
                     iterator.prepend = iterator.previous_prepend
                 case "with":
-                    iterator.prepend += rest_of_file[equals_locations[iterator.equals_number][1] - 1] + "."
-                    iterator.prepend += rest_of_file[equals_locations[iterator.equals_number][1] + 2] + "="
+                    iterator.prepend += self.__checking_group(groups, equals_locations[iterator.equals_number][0])
+                    iterator.prepend += rest_of_file[equals_locations[iterator.equals_number][1] - 1] + "="
+                    iterator.prepend += rest_of_file[equals_locations[iterator.equals_number][1] + 2] + "."
                     in_the_brackets: list = []
                     for phrase_itr in range(equals_locations[iterator.equals_number][1] + 5, len(rest_of_file)):
                         if rest_of_file[phrase_itr] == "];":
                             break
-                        else:
-                            in_the_brackets.append(rest_of_file[phrase_itr])
+                        in_the_brackets.append(rest_of_file[phrase_itr])
                     for list_item in in_the_brackets:
                         self.__tree.add_branch(iterator.prepend + list_item, True)
                     iterator.prepend = iterator.previous_prepend
                 case "lib.mkDefault" | "lib.mkForce":
+                    iterator.prepend += self.__checking_group(groups, equals_locations[iterator.equals_number][0])
                     iterator.prepend += rest_of_file[equals_locations[iterator.equals_number][1] - 1] + "="
                     iterator.prepend += rest_of_file[equals_locations[iterator.equals_number][1] + 1] + "."
                     self.__tree.add_branch(iterator.prepend +
                                            rest_of_file[equals_locations[iterator.equals_number][1] + 2],
-                                           True)
+                                           False)
                     iterator.prepend = iterator.previous_prepend
                 case _:  # Then it is a variable
+                    iterator.prepend += self.__checking_group(groups, equals_locations[iterator.equals_number][0])
                     iterator.prepend += rest_of_file[equals_locations[iterator.equals_number][1] - 1] + "="
                     self.__tree.add_branch(
-                        iterator.prepend + rest_of_file[equals_locations[iterator.equals_number][1] + 1], True)
+                        iterator.prepend + rest_of_file[equals_locations[iterator.equals_number][1] + 1], False)
                     iterator.prepend = iterator.previous_prepend
             iterator.equals_number += 1
+
+    def __checking_group(self, groups: dict[str, tuple[int, int]], location: int) -> str:
+        to_be_prepended: str = ""
+        for group in groups.items():
+            if group[1][0] < location < group[1][1]:
+                # +2 due to the equals being before the group in theory, hence it wouldn't work
+                to_be_prepended += group[0] + "."
+        return to_be_prepended
 
     def __finding_equals_signs(self, file: list) -> list:
         """Iterates through the file - split on spaces - to find the equals signs positions
@@ -348,7 +356,7 @@ def main():
     Returns:
         None
     """
-    Decomposer(file_path=Path("/home/max/nea/NEA/hardware-configuration.nix"))
+    Decomposer(file_path=Path("/home/max/nea/NEA/configuration.nix"))
 
 
 if __name__ == "__main__":
