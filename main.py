@@ -114,11 +114,12 @@ class CommentHandling:
 class Decomposer:
     """Class to handle the decomposition of the Nix file and addition of tokens to the tree"""
 
-    def __init__(self, file_path: Path):
+    def __init__(self, file_path: Path, tree: Tree):
         """Takes in file path and stores it for the main decomposition function
         
         Args:
-            file_path: The file path for the Nix configuration file
+            file_path: Path - The file path for the Nix configuration file
+            tree: Tree - The tree that decomposer should add to
 
         Returns:
             None
@@ -128,9 +129,9 @@ class Decomposer:
         """
 
         self.__file_path: Path = file_path
+        self.__tree: Tree = tree
         if (not self.__file_path.exists()) or (self.__file_path.is_dir()):
             raise FileNotFoundError("The configuration file does not exist")
-        self.__tree = Tree()
         comment_handling = CommentHandling(file_path)
         comment_handling.extract_comments()
         self.__reading_the_full_file(comment_handling)
@@ -185,7 +186,7 @@ class Decomposer:
             None
 
         Note:
-            Works due to string.index providing the first occurrence - the headers in a Nix file
+            Works due to string index providing the first occurrence - the headers in a Nix file
         """
         string_in_headers: str = self.__full_file[self.__full_file.index("{") + 1:self.__full_file.index("}")]
         for header in string_in_headers.split(","):
@@ -193,8 +194,6 @@ class Decomposer:
 
     def __managing_the_rest_of_the_file(self) -> None:
         """Splits the rest of the file into their tokens and adds to the tree
-
-        Args:
 
         Returns:
             None
@@ -205,51 +204,51 @@ class Decomposer:
         iterator = Iterator()
         rest_of_file: str = self.__cleaning_the_configuration(self.__full_file[self.__full_file.index("}") + 1:])
         groups = self.__forming_groups_dict(rest_of_file)
-        rest_of_file: list = rest_of_file.split(" ")
-        equals_locations: list = self.__finding_equals_signs(rest_of_file)
+        rest_of_file_split: list = rest_of_file.split(" ")
+        equals_locations: list = self.__finding_equals_signs(rest_of_file_split)
         iterator.previous_prepend = ""
 
         while iterator.equals_number <= len(equals_locations) - 1:
-            match rest_of_file[equals_locations[iterator.equals_number][1] + 1]:
+            match rest_of_file_split[equals_locations[iterator.equals_number][1] + 1]:
                 case "{":
                     pass  # To stop brackets being added as variables
                 case "[":
                     iterator.prepend += self.__checking_group(groups, equals_locations[iterator.equals_number][0])
-                    iterator.prepend += rest_of_file[equals_locations[iterator.equals_number][1] - 1] + "="
+                    iterator.prepend += rest_of_file_split[equals_locations[iterator.equals_number][1] - 1] + "="
                     # Should not be an index error unless the Nix file is invalid
                     in_the_brackets: list = []
                     for phrase_itr in range(equals_locations[iterator.equals_number][1] + 2, len(rest_of_file)):
-                        if rest_of_file[phrase_itr] == "];":
+                        if rest_of_file_split[phrase_itr] == "];":
                             break
-                        in_the_brackets.append(rest_of_file[phrase_itr])
+                        in_the_brackets.append(rest_of_file_split[phrase_itr])
                     for list_item in in_the_brackets:
                         self.__tree.add_branch(iterator.prepend + list_item, True)
                     iterator.prepend = iterator.previous_prepend
                 case "with":
                     iterator.prepend += self.__checking_group(groups, equals_locations[iterator.equals_number][0])
-                    iterator.prepend += rest_of_file[equals_locations[iterator.equals_number][1] - 1] + "="
-                    iterator.prepend += rest_of_file[equals_locations[iterator.equals_number][1] + 2] + "."
+                    iterator.prepend += rest_of_file_split[equals_locations[iterator.equals_number][1] - 1] + "="
+                    iterator.prepend += rest_of_file_split[equals_locations[iterator.equals_number][1] + 2] + "."
                     in_the_brackets: list = []
                     for phrase_itr in range(equals_locations[iterator.equals_number][1] + 5, len(rest_of_file)):
-                        if rest_of_file[phrase_itr] == "];":
+                        if rest_of_file_split[phrase_itr] == "];":
                             break
-                        in_the_brackets.append(rest_of_file[phrase_itr])
+                        in_the_brackets.append(rest_of_file_split[phrase_itr])
                     for list_item in in_the_brackets:
                         self.__tree.add_branch(iterator.prepend + list_item, True)
                     iterator.prepend = iterator.previous_prepend
                 case "lib.mkDefault" | "lib.mkForce":
                     iterator.prepend += self.__checking_group(groups, equals_locations[iterator.equals_number][0])
-                    iterator.prepend += rest_of_file[equals_locations[iterator.equals_number][1] - 1] + "="
-                    iterator.prepend += rest_of_file[equals_locations[iterator.equals_number][1] + 1] + "."
+                    iterator.prepend += rest_of_file_split[equals_locations[iterator.equals_number][1] - 1] + "="
+                    iterator.prepend += rest_of_file_split[equals_locations[iterator.equals_number][1] + 1] + "."
                     self.__tree.add_branch(iterator.prepend +
-                                           rest_of_file[equals_locations[iterator.equals_number][1] + 2],
+                                           rest_of_file_split[equals_locations[iterator.equals_number][1] + 2],
                                            False)
                     iterator.prepend = iterator.previous_prepend
                 case _:  # Then it is a variable
                     iterator.prepend += self.__checking_group(groups, equals_locations[iterator.equals_number][0])
-                    iterator.prepend += rest_of_file[equals_locations[iterator.equals_number][1] - 1] + "="
+                    iterator.prepend += rest_of_file_split[equals_locations[iterator.equals_number][1] - 1] + "="
                     self.__tree.add_branch(
-                        iterator.prepend + rest_of_file[equals_locations[iterator.equals_number][1] + 1], False)
+                        iterator.prepend + rest_of_file_split[equals_locations[iterator.equals_number][1] + 1], False)
                     iterator.prepend = iterator.previous_prepend
             iterator.equals_number += 1
 
@@ -351,12 +350,12 @@ class Decomposer:
 def main():
     """Decomposes the file and adds to the empty add_branch method of the tree class
 
-    Args:
-
     Returns:
         None
     """
-    Decomposer(file_path=Path("/home/max/nea/NEA/configuration.nix"))
+
+    tree = Tree()
+    Decomposer(file_path=Path("/home/max/nea/NEA/configuration.nix"), tree=tree)
 
 
 if __name__ == "__main__":
