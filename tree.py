@@ -1,13 +1,5 @@
 """Contains the tree implementation"""
-from enum import Enum
-
-
-class Types(Enum):
-    """This enum defines the possible types for nix variables"""
-    BOOL = 0
-    INT = 1
-    STRING = 2
-    UNIQUE = 3
+from parsing import Types
 
 
 def find_type(variable: str) -> Types:
@@ -24,8 +16,10 @@ def find_type(variable: str) -> Types:
         return Types.INT
     if variable in ("true", "false"):
         return Types.BOOL
-    if "\"" in variable:
+    if "'" in variable:
         return Types.STRING
+    if "[" in variable:
+        return Types.LIST
     return Types.UNIQUE
 
 
@@ -134,20 +128,18 @@ class VariableNode(Node):
         The lack of setters for data_type and is_list is intentional as these will never need to be changed
     """
 
-    def __init__(self, name: str, data, data_type: Types, is_list: bool) -> None:
+    def __init__(self, name: str, data, data_type: Types) -> None:
         """Sets the name of the node, its data and that datas type and if it is part of a list
 
         Args:
             name: str - the name to be set
             data: unknown - the data for the variable
             data_type: Types - the type of the data the variable stores
-            is_list: bool - Whether the variable is part of a list
         """
 
         super().__init__(name)
         self.__type = data_type
         self.__data = data
-        self.__is_list = is_list
 
     def get_type(self) -> Types:
         """Returns the data type of the variable 
@@ -166,15 +158,6 @@ class VariableNode(Node):
         """
 
         return self.__data
-
-    def is_list(self) -> bool:
-        """Returns whether the variable is part of a list
-
-        Returns:
-            bool: true if the variable is part of a list
-        """
-
-        return self.__is_list
 
     def set_data(self, data) -> bool:
         """Sets the data within the variable
@@ -215,12 +198,11 @@ class Tree:
 
         return self.__root_node
 
-    def add_branch(self, contents: str, is_list: bool) -> None:
+    def add_branch(self, contents: str) -> None:
         """Adds a variable to the tree, creating the path out of connector nodes as required
 
         Args:
             contents: str - the variables full path
-            is_list: bool - true if the variable is part of a list and false if not
         """
 
         string_path, variable = (contents.split("=")[0], contents.split("=")[1])
@@ -231,13 +213,13 @@ class Tree:
         elif isinstance(found_node, ConnectorNode):
             node_path = found_node.get_name()
             if not node_path == "":
-                path = path[path.index(node_path)+1:]
+                path = path[path.index(node_path) + 1:]
             nodes: list[ConnectorNode] = [found_node]
             for bit_of_path in path:
                 nodes.append(ConnectorNode(bit_of_path))
-            for node_itr in range(len(nodes)-1):
-                nodes[node_itr].add_node(nodes[node_itr+1])
-            nodes[len(nodes)-1].add_node(VariableNode(string_path, variable, find_type(variable), is_list))
+            for node_itr in range(len(nodes) - 1):
+                nodes[node_itr].add_node(nodes[node_itr + 1])
+            nodes[len(nodes) - 1].add_node(VariableNode(string_path, variable, find_type(variable)))
 
     def find_node(self, path: str, node: Node, covered_path=None) -> Node:
         """Recursively searches the tree looking for a node
@@ -278,8 +260,8 @@ class Tree:
         """
 
         if isinstance(node, ConnectorNode):
-            print(append+node.get_name())
+            print(append + node.get_name())
             for i in node.get_connected_nodes():
-                self.quick_display(i, append+"  ")
+                self.quick_display(i, append + "  ")
         if isinstance(node, VariableNode):
-            print(append+"|--"+node.get_data()+" "+str(node.is_list()))
+            print(append + "|--" + node.get_data())

@@ -15,7 +15,7 @@ class Iterator:
 class CommentHandling:
     """Class to handle the comments in a Nix file"""
 
-    def __init__(self, file_path: Path):
+    def __init__(self, file_path: Path) -> None:
         """Takes in the file path of the configuration as a parameter and stores it for use in the methods
 
         Args:
@@ -114,7 +114,7 @@ class CommentHandling:
 class Decomposer:
     """Class to handle the decomposition of the Nix file and addition of tokens to the tree"""
 
-    def __init__(self, file_path: Path, tree: Tree):
+    def __init__(self, file_path: Path, tree: Tree) -> None:
         """Takes in file path and stores it for the main decomposition function
         
         Args:
@@ -190,7 +190,7 @@ class Decomposer:
         """
         string_in_headers: str = self.__full_file[self.__full_file.index("{") + 1:self.__full_file.index("}")]
         for header in string_in_headers.split(","):
-            self.__tree.add_branch(contents=f"headers={header.strip()}", is_list=False)
+            self.__tree.add_branch(contents=f"headers={header.strip()}")
 
     def __managing_the_rest_of_the_file(self) -> None:
         """Splits the rest of the file into their tokens and adds to the tree
@@ -221,20 +221,17 @@ class Decomposer:
                         if rest_of_file_split[phrase_itr] == "];":
                             break
                         in_the_brackets.append(rest_of_file_split[phrase_itr])
-                    for list_item in in_the_brackets:
-                        self.__tree.add_branch(iterator.prepend + list_item, True)
+                    self.__tree.add_branch(f"{iterator.prepend}[{', '.join(in_the_brackets)}]")
                     iterator.prepend = iterator.previous_prepend
                 case "with":
                     iterator.prepend += self.__checking_group(groups, equals_locations[iterator.equals_number][0])
                     iterator.prepend += rest_of_file_split[equals_locations[iterator.equals_number][1] - 1] + "="
-                    iterator.prepend += rest_of_file_split[equals_locations[iterator.equals_number][1] + 2] + "."
                     in_the_brackets: list = []
                     for phrase_itr in range(equals_locations[iterator.equals_number][1] + 5, len(rest_of_file)):
                         if rest_of_file_split[phrase_itr] == "];":
                             break
-                        in_the_brackets.append(rest_of_file_split[phrase_itr])
-                    for list_item in in_the_brackets:
-                        self.__tree.add_branch(iterator.prepend + list_item, True)
+                        in_the_brackets.append(rest_of_file_split[equals_locations[iterator.equals_number][1] + 2] + "."+rest_of_file_split[phrase_itr])
+                    self.__tree.add_branch(f"{iterator.prepend}[{', '.join(in_the_brackets)}]")
                     iterator.prepend = iterator.previous_prepend
                 case "lib.mkDefault" | "lib.mkForce":
                     iterator.prepend += self.__checking_group(groups, equals_locations[iterator.equals_number][0])
@@ -242,17 +239,26 @@ class Decomposer:
                     iterator.prepend += rest_of_file_split[equals_locations[iterator.equals_number][1] + 1] + "."
                     self.__tree.add_branch(iterator.prepend +
                                            rest_of_file_split[equals_locations[iterator.equals_number][1] + 2],
-                                           False)
+                    )
                     iterator.prepend = iterator.previous_prepend
                 case _:  # Then it is a variable
                     iterator.prepend += self.__checking_group(groups, equals_locations[iterator.equals_number][0])
                     iterator.prepend += rest_of_file_split[equals_locations[iterator.equals_number][1] - 1] + "="
                     self.__tree.add_branch(
-                        iterator.prepend + rest_of_file_split[equals_locations[iterator.equals_number][1] + 1], False)
+                        iterator.prepend + rest_of_file_split[equals_locations[iterator.equals_number][1] + 1])
                     iterator.prepend = iterator.previous_prepend
             iterator.equals_number += 1
 
     def __checking_group(self, groups: dict[str, tuple[int, int]], location: int) -> str:
+        """Checks which group the location in the string is
+
+        Args:
+            groups: dict[str, tuple[int, int]] - The groups dictionary
+            location: int - the location in the string we want to check
+
+        Returns:
+            str - a string containing the groups that need to be added to the start of an option
+        """
         to_be_prepended: str = ""
         for group in groups.items():
             if group[1][0] < location < group[1][1]:
@@ -294,6 +300,7 @@ class Decomposer:
         file = re.sub("=", " = ", file)
         file = re.sub("}", " } ", file)
         file = re.sub("{", " { ", file)
+        file = re.sub("\"", "'", file) # For easier handling of strings
         file = re.sub(";", " ; ", file)  # For with clauses
         file = re.sub(r"}\s*;", "}; ", file)
         file = re.sub(r"]\s*;", "]; ", file)
@@ -329,7 +336,7 @@ class Decomposer:
         """Sorts the groups based on size in descending order
 
         Args:
-            groups: dict[str, tuple[int, int]] - The groups passed in - unarranged
+            groups: dict[str, tuple[int, int]] - The groups passed in - unordered
 
         Returns:
             new_groups: dict[str, tuple[int, int]] - The groups now sorted with the largest width first
