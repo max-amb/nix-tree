@@ -1,4 +1,5 @@
 """Contains the tree implementation"""
+from custom_types import *
 from parsing import Types
 
 
@@ -10,16 +11,20 @@ def find_type(variable: str) -> Types:
 
     Returns:
         Types - The variable type
+
+    Note:
+        The organisation of these if clauses is important, if the string one is before the list one then any list of
+        strings would get classified as a string
     """
 
     if variable.isdigit():
         return Types.INT
     if variable in ("true", "false"):
         return Types.BOOL
-    if "'" in variable:
-        return Types.STRING
     if "[" in variable:
         return Types.LIST
+    if "'" in variable:
+        return Types.STRING
     return Types.UNIQUE
 
 
@@ -124,8 +129,8 @@ class VariableNode(Node):
     """The variable node, it stores a value such as true or 'vim'
 
     Note:
-        A variable nodes name will always be its full path, e.g. programs.firefox.enable=true
-        The lack of setters for data_type and is_list is intentional as these will never need to be changed
+        A variable nodes name will always be its full path, e.g. programs.firefox.enable
+        The lack of a setter for data_type is intentional as these will never need to be changed
     """
 
     def __init__(self, name: str, data, data_type: Types) -> None:
@@ -178,7 +183,7 @@ class VariableNode(Node):
         return False
 
 
-class Tree:
+class DecomposerTree:
     """An implementation of a rooted tree
 
     Note:
@@ -264,4 +269,33 @@ class Tree:
             for i in node.get_connected_nodes():
                 self.quick_display(i, append + "  ")
         if isinstance(node, VariableNode):
-            print(append + "|--" + node.get_data())
+            print(append + "|--" + node.get_name().split(".")[-1]+"="+node.get_data())
+
+    def add_to_ui(self, node: Node, previous_node: UIConnectorNode) -> None:
+        """Iterates through the tree adding nodes to the ui tree
+
+        Args:
+            node: Node - the node to start displaying from - usually the root node
+            previous_node: UIConnectorNode - initially the root node, stores where you are in the tree
+
+        Note:
+            The avoidance of adding the root node to the ui tree means that there isn't a blank space to represent the
+            root node of the decomposer tree. The check if a child is a variable is to stop double naming, like:
+            headers
+                headers=config
+        """
+
+        if isinstance(node, ConnectorNode):
+            children = node.get_connected_nodes()
+            if node != self.get_root() and not isinstance(children[0], VariableNode):
+                prev_node = previous_node.add(node.get_name())
+            else:
+                prev_node = previous_node
+            for child in children:
+                self.add_to_ui(child, prev_node)
+        if isinstance(node, VariableNode):
+            if len(node.get_name().split(".")) > 1:
+                label = node.get_name().split(".")[-1]+"="+node.get_data()
+            else:
+                label = node.get_name()+"="+node.get_data()
+            previous_node.add_leaf(str(label), data={node.get_name(): node.get_data(), "type": node.get_type()})
