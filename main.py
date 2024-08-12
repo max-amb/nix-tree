@@ -413,6 +413,7 @@ class AddScreenPath(ModalScreen[list]):
 
         self.__node = node
         self.__operations = []
+        self.__path = ""
         self.__options = options
         super().__init__()
 
@@ -516,8 +517,8 @@ class AddScreenPath(ModalScreen[list]):
         end it also adds the variable to the tree
 
         Args:
-            node: UIConnectorNode - the current node we are analysing (as the function is recursive this changes in every
-            stack frame)
+            node: UIConnectorNode - the current node we are analysing (as the function is recursive this changes in
+            every stack frame)
             path: list - this stores how far down the path the function is, also informing it when to stop
             data: str - the data of the variable to be added
             path_as_list: list - stores the path that needs to be added into the variables data (as it requires
@@ -775,7 +776,8 @@ class UI(App):
         ("q", "quit", "To quit the app"),
         ("?", "help", "Show help screen"),
         ("u", "undo", "To undo the previous change"),
-        ("e", "empty", "To empty the operations stack")
+        ("e", "empty", "To empty the operations stack"),
+        ("a", "apply", "To apply your changes to the file"),
     ]
 
     def __init__(self, file_name: str, decomposer: Decomposer) -> None:
@@ -899,13 +901,39 @@ class UI(App):
         else:
             self.notify("The operations stack is empty")
 
+    def action_apply(self) -> None:
+        tree = self.__decomposer.get_tree()
+        while self.__stack.get_len() > 0:
+            action = self.__stack.pop().name
+            if "[" in action:
+                path = action.split("=")[0].split(" ")[1]
+                variable: str = action[action.index("["):action.index("]") + 1]
+                full_path = path + "=" + variable
+            elif "'" in action:
+                path = action.split("=")[0].split(" ")[1]
+                variable: str = "'" + action.split("'")[1] + "'"
+                full_path = path + "=" + variable
+            else:
+                full_path = action.split(" ")[1]
+                path = full_path.split("=")[0]
+            match action.split(" ")[0]:
+                case "Added":
+                    tree.add_branch(full_path)
+                    self.app.exit()
+                case "Delete":
+                    parent = tree.find_node_parent(full_path, tree.get_root())
+                    parent.remove_child_variable_node(full_path)
+                    self.app.exit()
+
+
+
     def recursive_addition(self, node: UIConnectorNode, path: list, data: str, data_type: Types,
                            full_path: str) -> None:
         """Called by the undo function - if a node has been deleted this function adds it back
 
         Args:
-            node: UIConnectorNode - the current node we are analysing (as the function is recursive this changes in every
-            stack frame)
+            node: UIConnectorNode - the current node we are analysing (as the function is recursive this changes in
+            every stack frame)
             path: list - this stores how far down the path the function is, also informing it when to stop
             data: str - the data that needs to be added
             data_type: Types - the data type of the data being added
@@ -913,7 +941,7 @@ class UI(App):
 
         Note:
             While it is similar to the recursive addition in the path screen, this has slightly different data that we
-            have hence we can make it slightly simpler - also we do not need to make any sections/groups so it doesn't
+            have hence we can make it slightly simpler - also we do not need to make any sections/groups, so it doesn't
             need that functionality.
         """
         if len(path) > 1:
@@ -1029,22 +1057,16 @@ class UI(App):
         yield Header(name="Nix tree", show_clock=True, icon=" ")
         yield Footer()
 
-    def get_tree(self):
-        return self.query_one(Tree).root
-
 
 def main():
-    """Decomposes the file and adds to the empty add_branch method of the tree class
-
-    Returns:
-        None
-    """
+    """Makes a DecomposerTree object along with calling the decomposer object to fill the tree, it then passes it into
+    the ui object from which it runs the ui"""
 
     tree = DecomposerTree()
     decomposer = Decomposer(file_path=Path(FILE_LOCATION), tree=tree)
-    # decomposer.get_tree().quick_display(decomposer.get_tree().get_root())
     ui = UI(FILE_LOCATION, decomposer)
     ui.run()
+    tree.quick_display(tree.get_root())
 
 
 if __name__ == "__main__":

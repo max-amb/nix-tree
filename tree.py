@@ -96,6 +96,15 @@ class ConnectorNode(Node):
 
         return self.__children
 
+    def remove_child_variable_node(self, full_path: str) -> None:
+        for i, node in enumerate(self.__children):
+            if isinstance(node, VariableNode):
+                if node.get_name()+"="+node.get_data() == full_path:
+                    self.__children.pop(i)
+                    return
+        raise CrazyError()
+
+
 
 class VariableNode(Node):
     """The variable node, it stores a value such as true or 'vim'
@@ -192,8 +201,8 @@ class DecomposerTree:
             if not node_path == "":
                 path = path[path.index(node_path) + 1:]
             nodes: list[ConnectorNode] = [found_node]
-            for bit_of_path in path:
-                nodes.append(ConnectorNode(bit_of_path))
+            for bit_of_path_itr in range(len(path)-1):
+                nodes.append(ConnectorNode(path[bit_of_path_itr]))
             for node_itr in range(len(nodes) - 1):
                 nodes[node_itr].add_node(nodes[node_itr + 1])
             nodes[len(nodes) - 1].add_node(VariableNode(string_path, variable, find_type(variable)))
@@ -228,6 +237,19 @@ class DecomposerTree:
             return node
         raise CrazyError()
 
+    def find_node_parent(self, path: str, node: Node, covered_path=None) -> Node:
+        if covered_path is None:
+            path = path.split("=")[0]
+            covered_path = path.split(".")
+        if len(covered_path) > 1:
+            node_to_visit: str = covered_path[0]
+            for nodes in node.get_connected_nodes():
+                if node_to_visit == nodes.get_name():
+                    del covered_path[0]
+                    return self.find_node_parent(path, nodes, covered_path)
+        else:
+            return node
+
     def quick_display(self, node: Node, append: str = "") -> None:
         """Recursively displays the tree on the console
 
@@ -252,14 +274,12 @@ class DecomposerTree:
 
         Note:
             The avoidance of adding the root node to the ui tree means that there isn't a blank space to represent the
-            root node of the decomposer tree. The check if a child is a variable is to stop double naming, like:
-            headers
-                headers=config
+            root node of the decomposer tree.
         """
 
         if isinstance(node, ConnectorNode):
             children = node.get_connected_nodes()
-            if node != self.get_root() and not isinstance(children[0], VariableNode):
+            if node != self.get_root():
                 prev_node = previous_node.add(node.get_name())
             else:
                 prev_node = previous_node

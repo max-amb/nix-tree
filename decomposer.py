@@ -206,7 +206,7 @@ class Decomposer:
             Check the flowchart in the writeup to learn more about this!
         """
         iterator = Iterator()
-        rest_of_file: str = self.__cleaning_the_configuration(self.__full_file[self.__full_file.index("}") + 1:])
+        rest_of_file: str = self.cleaning_the_configuration(self.__full_file[self.__full_file.index("}") + 1:])
         groups = self.__forming_groups_dict(rest_of_file)
         rest_of_file_split: list = rest_of_file.split(" ")
         equals_locations: list = self.__finding_equals_signs(rest_of_file_split)
@@ -234,8 +234,9 @@ class Decomposer:
                     for phrase_itr in range(equals_locations[iterator.equals_number][1] + 5, len(rest_of_file)):
                         if rest_of_file_split[phrase_itr] == "];":
                             break
-                        in_the_brackets.append(rf"({rest_of_file_split[equals_locations[iterator.equals_number][1] + 2]}).{rest_of_file_split[phrase_itr]}")
-                    self.__tree.add_branch(rf"{iterator.prepend}[{', '.join(in_the_brackets)}]")
+                        in_the_brackets.append(f"({rest_of_file_split[equals_locations[iterator.equals_number][1] + 2]}"
+                                               f").{rest_of_file_split[phrase_itr]}")
+                    self.__tree.add_branch(f"{iterator.prepend}[{', '.join(in_the_brackets)}]")
                     iterator.prepend = iterator.previous_prepend
                 case "lib.mkDefault" | "lib.mkForce":
                     iterator.prepend += self.__checking_group(groups, equals_locations[iterator.equals_number][0])
@@ -291,7 +292,7 @@ class Decomposer:
                 locations.append((char_location, phrase_itr))
         return locations
 
-    def __cleaning_the_configuration(self, file: str) -> str:
+    def cleaning_the_configuration(self, file: str) -> str:
         """This cleans the configuration with regex substitution to make it possible to tokenize
 
         Args:
@@ -356,6 +357,3 @@ class Decomposer:
             groups.pop(largest_group[0])
             new_groups.update({largest_group[0]: (largest_group[1][0], largest_group[1][1])})
         return new_groups
-
-
-
