@@ -1,7 +1,7 @@
 """Contains the tree implementation"""
 from custom_types import *
 from parsing import Types
-from errors import *
+from errors import CrazyError, NodeNotFound
 
 
 def find_type(variable: str) -> Types:

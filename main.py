@@ -3,7 +3,7 @@ from parsing import ParsingOptions, Types
 from decomposer import DecomposerTree, Decomposer
 from help_screens import MainHelpScreen, OptionsHelpScreen, SectionOptionsHelpScreen
 from custom_types import UIVariableNode, UIConnectorNode
-from errors import CrazyError, NodeNotFound
+from stacks import OperationsStack
 
 from pathlib import Path
 import re
@@ -16,51 +16,6 @@ from textual.widgets import Input, Label, ListView, ListItem, OptionList, Tree, 
 # Connector nodes are used in cases where it isn't known which node should be returned
 
 OPTIONS_LOCATION: str = "/home/max/options.json"
-
-
-class OperationsStack:
-    """An implementation of the stack data-structure in order to store operations effectively"""
-
-    def __init__(self) -> None:
-        """Creates the stack and the stack variables"""
-
-        self.__stack_array: list[ListItem] = []
-
-    def pop(self) -> ListItem:
-        """Pops the tops element of the stack
-
-        Returns:
-            ListItem - the top most element in the stack
-        """
-
-        return self.__stack_array.pop()
-
-    def push(self, item: ListItem) -> None:
-        """Pushes an element on to the stack
-
-        Args:
-            item: ListItem - the item to be added to the stack
-        """
-
-        self.__stack_array.append(item)
-
-    def peek(self) -> ListItem:
-        """Returns the uppermost value in the stack without removing it
-
-        Returns:
-            ListItem - the top most element in the stack
-        """
-
-        return self.__stack_array[-1]
-
-    def get_len(self) -> int:
-        """Returns the full stacks length
-
-        Returns:
-            int - the full stacks length
-        """
-
-        return len(self.__stack_array)
 
 
 class ModifyScreen(ModalScreen[str]):

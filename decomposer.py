@@ -2,8 +2,8 @@
 from pathlib import Path
 import re
 
-from stack import Stack
-from tree import *
+from stacks import GroupsStack
+from tree import DecomposerTree
 
 
 class Iterator:
@@ -322,7 +322,7 @@ class Decomposer:
             function before returning
         """
         groups: dict[str, tuple[int, int]] = {}
-        stack = Stack()
+        stack = GroupsStack()
         character_iterator = 0
         split_file: list = file.split(" ")
         for phrase_itr in range(len(split_file)):
