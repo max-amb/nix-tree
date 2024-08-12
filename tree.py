@@ -1,7 +1,7 @@
 """Contains the tree implementation"""
-from custom_types import *
+from custom_types import UIConnectorNode
 from parsing import Types
-from errors import CrazyError, NodeNotFound
+from errors import CrazyError
 
 
 def find_type(variable: str) -> Types:

@@ -1,3 +1,6 @@
+"""Defines some custom errors for use in the program"""
+
+
 class NodeNotFound(Exception):
     """Raised when the node does not exist in the tree
 

@@ -13,9 +13,8 @@ from textual.screen import ModalScreen
 from textual.widgets import Input, Label, ListView, ListItem, OptionList, Tree, Header, Footer, TabbedContent, \
     TabPane, Button, RadioSet
 
-# Connector nodes are used in cases where it isn't known which node should be returned
-
 OPTIONS_LOCATION: str = "/home/max/options.json"
+FILE_LOCATION: str = "/home/max/nea/NEA/configuration.nix"
 
 
 class ModifyScreen(ModalScreen[str]):
@@ -1042,9 +1041,9 @@ def main():
     """
 
     tree = DecomposerTree()
-    decomposer = Decomposer(file_path=Path("/home/max/nea/NEA/configuration.nix"), tree=tree)
+    decomposer = Decomposer(file_path=Path(FILE_LOCATION), tree=tree)
     # decomposer.get_tree().quick_display(decomposer.get_tree().get_root())
-    ui = UI("/home/max/nea/NEA/configuration.nix", decomposer)
+    ui = UI(FILE_LOCATION, decomposer)
     ui.run()
 
 
