@@ -186,11 +186,15 @@ class Decomposer:
             None
 
         Note:
-            Works due to string index providing the first occurrence - the headers in a Nix file
+            Works due to string index providing the first occurrence - the headers in a Nix file.
+            Also note the space just after the square bracket, this is so it doesn't need to be escaped as if it wasn't
+            escaped and there was no space, then there is a rendering error.
         """
         string_in_headers: str = self.__full_file[self.__full_file.index("{") + 1:self.__full_file.index("}")]
+        headers: list[str] = []
         for header in string_in_headers.split(","):
-            self.__tree.add_branch(contents=f"headers={header.strip()}")
+            headers.append(header.strip())
+        self.__tree.add_branch(contents=f"headers=[ {', '.join(headers)}]")
 
     def __managing_the_rest_of_the_file(self) -> None:
         """Splits the rest of the file into their tokens and adds to the tree

@@ -1,6 +1,7 @@
 """Contains the tree implementation"""
 from custom_types import *
 from parsing import Types
+from errors import *
 
 
 def find_type(variable: str) -> Types:
@@ -26,35 +27,6 @@ def find_type(variable: str) -> Types:
     if "'" in variable:
         return Types.STRING
     return Types.UNIQUE
-
-
-class NodeNotFound(Exception):
-    """Raised when the node does not exist in the tree
-
-    Args:
-        node_name: str - the name of the node that does not exist in the tree
-        message: str - the message to print out with this exception
-
-    Note:
-        https://www.programiz.com/python-programming/user-defined-exception
-    """
-
-    def __init__(self, node_name: str, message: str = "Node {NODE} does not exist in the tree"):
-        super().__init__(message.format(NODE=node_name))
-
-
-class CrazyError(Exception):
-    """Raised when I have no idea what has happened, should never be raised
-
-    Args:
-        message: str - the message to print out with this exception
-
-    Note:
-        https://www.programiz.com/python-programming/user-defined-exception
-    """
-
-    def __init__(self, message: str = "How on gods green earth did you get here"):
-        super().__init__(message)
 
 
 class Node:
@@ -269,7 +241,7 @@ class DecomposerTree:
             for i in node.get_connected_nodes():
                 self.quick_display(i, append + "  ")
         if isinstance(node, VariableNode):
-            print(append + "|--" + node.get_name().split(".")[-1]+"="+node.get_data())
+            print(append + "|--" + node.get_name().split(".")[-1] + "=" + node.get_data())
 
     def add_to_ui(self, node: Node, previous_node: UIConnectorNode) -> None:
         """Iterates through the tree adding nodes to the ui tree
@@ -295,7 +267,7 @@ class DecomposerTree:
                 self.add_to_ui(child, prev_node)
         if isinstance(node, VariableNode):
             if len(node.get_name().split(".")) > 1:
-                label = node.get_name().split(".")[-1]+"="+node.get_data()
+                label = node.get_name().split(".")[-1] + "=" + node.get_data()
             else:
-                label = node.get_name()+"="+node.get_data()
+                label = node.get_name() + "=" + node.get_data()
             previous_node.add_leaf(str(label), data={node.get_name(): node.get_data(), "type": node.get_type()})

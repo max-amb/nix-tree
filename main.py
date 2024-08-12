@@ -2,7 +2,8 @@
 from parsing import ParsingOptions, Types
 from decomposer import DecomposerTree, Decomposer
 from help_screens import MainHelpScreen, OptionsHelpScreen, SectionOptionsHelpScreen
-from custom_types import *
+from custom_types import UIVariableNode, UIConnectorNode
+from errors import CrazyError, NodeNotFound
 
 from pathlib import Path
 import re
@@ -900,7 +901,7 @@ class UI(App):
                                 full_path.split("=")[0]
                             )
                         else:
-                            raise Exception
+                            raise TypeError("Cannot deduce node variable type")
                     case "Added":
                         variable = full_path.split("=")[1]
                         node_to_delete: UIVariableNode = self.recursive_searching_for_var(
@@ -933,7 +934,7 @@ class UI(App):
                                     self.query_one(Tree).root,
                                     path_before_section
                                 )
-                                section_node.add(path_as_list[-1])
+                                section_node.add(path_as_list[-1], after=0)
                             case "added":
                                 path_as_list = action.split(" ")[1].split(".")
                                 section_node: UIConnectorNode = self.recursive_searching_for_connector(
@@ -958,7 +959,8 @@ class UI(App):
 
         Note:
             While it is similar to the recursive addition in the path screen, this has slightly different data that we
-            have hence we can make it slightly simpler
+            have hence we can make it slightly simpler - also we do not need to make any sections/groups so it doesn't
+            need that functionality.
         """
         if len(path) > 1:
             path_bit_already_exists = False
@@ -972,7 +974,7 @@ class UI(App):
                 del path[0]
                 self.recursive_addition(new_node, path, data, data_type, full_path)
         else:
-            node.add_leaf(path[0] + "=" + data, data={full_path: data, "type": data_type})
+            node.add_leaf(path[0] + "=" + data, data={full_path: data, "type": data_type}, after=0)
 
     def recursive_searching_for_var(self, node: UIConnectorNode, path: list, variable: str) -> UIVariableNode:
         """Recursively searches for a var so the undo function can do something with it - often deletion
