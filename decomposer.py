@@ -225,7 +225,7 @@ class Decomposer:
                         if rest_of_file_split[phrase_itr] == "];":
                             break
                         in_the_brackets.append(rest_of_file_split[phrase_itr])
-                    self.__tree.add_branch(f"{iterator.prepend}[ {', '.join(in_the_brackets)} ]")
+                    self.__tree.add_branch(f"{iterator.prepend}[ {' '.join(in_the_brackets)} ]")
                     iterator.prepend = iterator.previous_prepend
                 case "with":
                     iterator.prepend += self.__checking_group(groups, equals_locations[iterator.equals_number][0])
@@ -236,7 +236,7 @@ class Decomposer:
                             break
                         in_the_brackets.append(f"({rest_of_file_split[equals_locations[iterator.equals_number][1] + 2]}"
                                                f").{rest_of_file_split[phrase_itr]}")
-                    self.__tree.add_branch(f"{iterator.prepend}[ {', '.join(in_the_brackets)} ]")
+                    self.__tree.add_branch(f"{iterator.prepend}[ {' '.join(in_the_brackets)} ]")
                     iterator.prepend = iterator.previous_prepend
                 case "lib.mkDefault" | "lib.mkForce":
                     iterator.prepend += self.__checking_group(groups, equals_locations[iterator.equals_number][0])
