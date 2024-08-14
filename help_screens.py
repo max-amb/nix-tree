@@ -11,6 +11,10 @@ MAINHELPTEXT = """\
 - Tab: To switch from tabs to the window
 - Enter: To modify a variable or fold an indent
 - q/Esc : To close this help dialog
+
+Note:
+Lists have spaces placed at the front of them to avoid formatting issues,
+they will not be present in the final file.
 """
 
 """The help text for the options menu"""

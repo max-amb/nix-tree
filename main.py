@@ -1,9 +1,11 @@
 """Ui tests"""
+from errors import CrazyError
 from parsing import ParsingOptions, Types
 from decomposer import DecomposerTree, Decomposer
+from tree import VariableNode, ConnectorNode, Node
 from help_screens import MainHelpScreen, OptionsHelpScreen, SectionOptionsHelpScreen
 from custom_types import UIVariableNode, UIConnectorNode
-from stacks import OperationsStack
+from stacks import OperationsStack, OperationsQueue, NodeStack
 
 from pathlib import Path
 import re
@@ -15,6 +17,36 @@ from textual.widgets import Input, Label, ListView, ListItem, OptionList, Tree, 
 
 OPTIONS_LOCATION: str = "/home/max/options.json"
 FILE_LOCATION: str = "/home/max/nea/NEA/configuration.nix"
+
+
+class Composer:
+    def __init__(self, tree: DecomposerTree):
+        self.__tree: DecomposerTree = tree
+        self.__file_location = FILE_LOCATION + ".new"
+        self.write_to_file()
+
+    def write_to_file(self):
+        with open(self.__file_location, "w") as file:
+            file.writelines(self.__work_out_lines(self.__tree.get_root()))
+
+    def __work_out_lines(self, node: ConnectorNode) -> list[str]:
+        lines: list[str] = []
+        stack = NodeStack()
+        node.set_discovered()
+        for singular_node in node.get_connected_nodes():
+            stack.push(singular_node)
+        while stack.get_len() > 0:
+            for w in stack.peek().get_connected_nodes():
+                if not w.get_discovered():
+                    if isinstance(w, ConnectorNode):
+                        lines.append(w.get_name()+"\n")
+                    else:
+                        lines.append("      " + w.get_data()+"\n")
+                    w.set_discovered()
+                    for singular_node in w.get_connected_nodes():
+                        stack.push(singular_node)
+            stack.pop()
+        return lines
 
 
 class ModifyScreen(ModalScreen[str]):
@@ -81,10 +113,11 @@ class ModifyScreen(ModalScreen[str]):
                 self.notify("You lost a speech mark! Not updating")
                 self.app.pop_screen()
             else:
-                self.__node.node.label = self.__path.split(".")[-1] + "=" + new_data.value
+                self.__node.node.label = self.__path.split(".")[-1] + "=" + new_data.value.replace("[", "[ ")
                 if self.__node.node.data:
-                    self.__node.node.data[self.__path] = new_data.value
-                self.dismiss(f"Change {self.__path}={self.__value} -> {self.__path}={new_data.value}")
+                    self.__node.node.data[self.__path] = new_data.value.replace("[", "[ ")
+                self.dismiss(f"Change {self.__path}={self.__value.replace("[", "[ ")} -> "
+                             f"{self.__path}={new_data.value.replace("[", "[ ")}")
         else:
             self.app.pop_screen()
 
@@ -251,7 +284,7 @@ class AddScreenStringUniqueList(ModalScreen[str]):
             user_input: Input.Submitted - the choice of the user
         """
 
-        self.dismiss(user_input.value)
+        self.dismiss(user_input.value.replace("[", "[ "))
         return
 
 
@@ -766,6 +799,49 @@ class SectionOptionsScreen(ModalScreen[list[str]]):
         self.app.push_screen(SectionOptionsHelpScreen())
 
 
+class QueueScreen(ModalScreen[bool]):
+    """The screen where the user can choose to apply their changes to the file or not"""
+
+    def __init__(self, queue: list) -> None:
+        """Redefining the init function to take in a queue list for displaying in the ListView
+
+        Args:
+            queue: list - the queue as a list
+        """
+
+        self.__queue_as_list = []
+        for item in queue:
+            self.__queue_as_list.append(ListItem(Label(item.name), name=item.name))
+        super().__init__()
+
+    def compose(self) -> ComposeResult:
+        """Defines what the queue screen will look like (e.g. for adding a section)
+
+        Returns:
+            ComposeResult - the screen in a form the library understands
+        """
+
+        with Vertical():
+            with Center():
+                yield ListView(*self.__queue_as_list, id="operations_list_queue")
+                with Horizontal():
+                    yield Button("Apply", id="apply", variant="success")
+                    yield Button("Don't apply", id="do_not_apply", variant="error")
+
+    def on_button_pressed(self, button: Button.Pressed) -> None:
+        """Called when the user chooses one of the buttons, the function removes its screen returning true if the
+        user chose to apply and false if not
+
+        Args:
+            button: Button.Pressed - an object detailing which button was clicked
+        """
+
+        if button.button.id == "apply":
+            self.dismiss(True)
+        else:
+            self.dismiss(False)
+
+
 class UI(App):
     """Defines the main screen of the app"""
 
@@ -790,6 +866,7 @@ class UI(App):
         """
 
         self.__stack = OperationsStack()
+        self.__queue = OperationsQueue()
         self.__options = ParsingOptions(Path(OPTIONS_LOCATION))
         self.__file_name = file_name
         self.__decomposer = decomposer
@@ -901,10 +978,12 @@ class UI(App):
         else:
             self.notify("The operations stack is empty")
 
-    def action_apply(self) -> None:
-        tree = self.__decomposer.get_tree()
-        while self.__stack.get_len() > 0:
-            action = self.__stack.pop().name
+    def __apply_changes(self) -> None:
+        """Applies the changes stored in the operations queue to the decomposer tree for changing the file"""
+
+        tree: DecomposerTree = self.__decomposer.get_tree()
+        while self.__queue.get_len() > 0:
+            action = self.__queue.dequeue().name
             if "[" in action:
                 path = action.split("=")[0].split(" ")[1]
                 variable: str = action[action.index("["):action.index("]") + 1]
@@ -919,13 +998,59 @@ class UI(App):
             match action.split(" ")[0]:
                 case "Added":
                     tree.add_branch(full_path)
-                    self.app.exit()
                 case "Delete":
-                    parent = tree.find_node_parent(full_path, tree.get_root())
-                    parent.remove_child_variable_node(full_path)
-                    self.app.exit()
+                    parent: Node = tree.find_node_parent(full_path, tree.get_root())
+                    if isinstance(parent, ConnectorNode):
+                        parent.remove_child_variable_node(full_path)
+                    else:
+                        raise CrazyError
+                case "Change":
+                    change_command: str = action[7:]
+                    pre: str = change_command.split("->")[0].strip()
+                    post: str = change_command.split("->")[1].strip()
+                    node_to_edit: Node = tree.find_variable_node(pre, tree.get_root())
+                    if isinstance(node_to_edit, VariableNode):
+                        node_to_edit.set_data(post.split("=")[1])
+                    else:
+                        raise CrazyError(node_to_edit.get_name())
+                case "Section":
+                    match action.split(" ")[-1]:
+                        case "deleted":
+                            parent: Node = tree.find_section_node_parent(action.split(" ")[1], tree.get_root())
+                            if isinstance(parent, ConnectorNode):
+                                parent.remove_child_section_node(action.split(" ")[1].split(".")[-1])
+                            else:
+                                raise CrazyError
+                        case "added":
+                            parent: Node = tree.find_section_node_parent(action.split(" ")[1], tree.get_root())
+                            if isinstance(parent, ConnectorNode):
+                                parent.add_node(ConnectorNode(action.split(" ")[1].split(".")[-1]))
+                            else:
+                                raise CrazyError
 
+    def action_apply(self) -> None:
+        """Called if "a" is pressed, it pushes the apply screen which allows the user to push their changes to the
+        configuration file"""
 
+        def handle_response_from_queue_screen(apply: bool | None) -> None:
+            """Takes the response from the apply changes screen and either performs the changes or returns the changes
+            back to the operations stack
+
+            Args:
+                apply: bool | None - true if the changes should be applied and false if not
+            """
+
+            if apply:
+                self.__apply_changes()
+                self.app.exit()
+            else:
+                while self.__queue.get_len() > 0:
+                    self.__stack.push(self.__queue.dequeue())
+
+        while self.__stack.get_len() > 0:
+            self.__queue.enqueue(self.__stack.pop())
+        queue_to_be_emptied = self.__queue.return_queue()
+        self.app.push_screen(QueueScreen(queue_to_be_emptied), handle_response_from_queue_screen)
 
     def recursive_addition(self, node: UIConnectorNode, path: list, data: str, data_type: Types,
                            full_path: str) -> None:
@@ -1067,6 +1192,7 @@ def main():
     ui = UI(FILE_LOCATION, decomposer)
     ui.run()
     tree.quick_display(tree.get_root())
+    Composer(tree)
 
 
 if __name__ == "__main__":

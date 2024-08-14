@@ -39,8 +39,8 @@ AddScreenStringUnique {
 #mainhelptext {
     border: panel darkorange;
     padding: 0 1;
-    width: 50;
-    height: 11;
+    width: 66;
+    height: 14;
 }
 
 #optionshelptext {

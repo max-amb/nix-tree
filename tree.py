@@ -40,6 +40,7 @@ class Node:
         """
 
         self.__name = name
+        self.__discovered = False
 
     def get_name(self) -> str:
         """Returns the nodes name
@@ -58,6 +59,15 @@ class Node:
         """
 
         self.__name = new_name
+
+    def get_discovered(self) -> bool:
+        return self.__discovered
+
+    def set_discovered(self):
+        self.__discovered = True
+
+    def get_connected_nodes(self) -> list:
+        return []
 
 
 class ConnectorNode(Node):
@@ -100,6 +110,14 @@ class ConnectorNode(Node):
         for i, node in enumerate(self.__children):
             if isinstance(node, VariableNode):
                 if node.get_name() + "=" + node.get_data() == full_path:
+                    self.__children.pop(i)
+                    return
+        raise CrazyError()
+
+    def remove_child_section_node(self, name: str) -> None:
+        for i, node in enumerate(self.__children):
+            if isinstance(node, ConnectorNode):
+                if node.get_name() == name:
                     self.__children.pop(i)
                     return
         raise CrazyError()
@@ -189,7 +207,7 @@ class DecomposerTree:
 
         string_path, variable = (contents.split("=")[0], contents.split("=")[1])
         path = string_path.split(".")
-        found_node = self.find_node(contents, self.__root_node)
+        found_node = self.find_variable_node(contents, self.__root_node)
         if isinstance(found_node, VariableNode):
             print("Node already in tree")
         elif isinstance(found_node, ConnectorNode):
@@ -203,7 +221,7 @@ class DecomposerTree:
                 nodes[node_itr].add_node(nodes[node_itr + 1])
             nodes[len(nodes) - 1].add_node(VariableNode(string_path, variable, find_type(variable)))
 
-    def find_node(self, path: str, node: Node, covered_path=None) -> Node:
+    def find_variable_node(self, path: str, node: Node, covered_path=None) -> Node:
         """Recursively searches the tree looking for a node
 
         Args:
@@ -228,7 +246,7 @@ class DecomposerTree:
                 if isinstance(i, ConnectorNode):
                     if node_to_visit == i.get_name():
                         del covered_path[0]
-                        return self.find_node(path, i, covered_path)
+                        return self.find_variable_node(path, i, covered_path)
                 elif isinstance(i, VariableNode):
                     if path.split("=")[0] == i.get_name():
                         return i
@@ -248,6 +266,17 @@ class DecomposerTree:
         else:
             return node
 
+    def find_section_node_parent(self, path: str, node: Node, covered_path=None) -> Node:
+        if covered_path is None:
+            covered_path = path.split(".")
+        if len(covered_path) > 1:
+            node_to_visit: str = covered_path[0]
+            for nodes in node.get_connected_nodes():
+                if node_to_visit == nodes.get_name():
+                    del covered_path[0]
+                    return self.find_node_parent(path, nodes, covered_path)
+        else:
+            return node
 
 
     def quick_display(self, node: Node, append: str = "") -> None:
