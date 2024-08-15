@@ -28,3 +28,7 @@ class CrazyError(Exception):
 
     def __init__(self, message: str = "How on gods green earth did you get here"):
         super().__init__(message)
+
+
+class NoValidHeadersNode(Exception):
+    pass

@@ -13,6 +13,7 @@ class Types(Enum):
     UNIQUE = 3
     LIST = 4
 
+
 class ParsingOptions:
     """This class manages the parsing of the options.json file"""
 

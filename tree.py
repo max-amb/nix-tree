@@ -1,7 +1,7 @@
 """Contains the tree implementation"""
 from custom_types import UIConnectorNode
 from parsing import Types
-from errors import CrazyError
+from errors import CrazyError, NodeNotFound
 
 
 def find_type(variable: str) -> Types:
@@ -60,13 +60,12 @@ class Node:
 
         self.__name = new_name
 
-    def get_discovered(self) -> bool:
-        return self.__discovered
-
-    def set_discovered(self):
-        self.__discovered = True
-
     def get_connected_nodes(self) -> list:
+        """Default get connected nodes method, connector nodes override it
+
+        Returns:
+            list - an empty list (returned for variables)
+        """
         return []
 
 
@@ -112,7 +111,7 @@ class ConnectorNode(Node):
                 if node.get_name() + "=" + node.get_data() == full_path:
                     self.__children.pop(i)
                     return
-        raise CrazyError()
+        raise NodeNotFound(full_path)
 
     def remove_child_section_node(self, name: str) -> None:
         for i, node in enumerate(self.__children):
@@ -120,7 +119,7 @@ class ConnectorNode(Node):
                 if node.get_name() == name:
                     self.__children.pop(i)
                     return
-        raise CrazyError()
+        raise NodeNotFound(name)
 
 
 class VariableNode(Node):
@@ -277,7 +276,6 @@ class DecomposerTree:
                     return self.find_node_parent(path, nodes, covered_path)
         else:
             return node
-
 
     def quick_display(self, node: Node, append: str = "") -> None:
         """Recursively displays the tree on the console

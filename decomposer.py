@@ -22,43 +22,31 @@ class CommentHandling:
         Args:
             file_path: The file path for the Nix configuration file
 
-        Returns:
-            None
-
         Note:
             Error handling is managed in the decomposer class, so it does not need to be implemented here
         """
         self.__file_path = file_path
-        self.__lines_with_comments: dict[int, str] = {}
-        self.__comments_attached_to_line: dict[str, str] = {}
+        self.__lines_with_comments: dict[int, (str, bool)] = {}
+        self.__comments_attached_to_line: dict[str, (str, bool)] = {}
 
     def extract_comments(self) -> None:
-        """Extracts the comments from the file and attaches them to the next line of code
+        """Extracts the comments from the file and attaches them to the next line of code"""
 
-        Args:
-
-        Returns:
-            None
-
-        Note:
-            This does not handle multiline comments due to it being a prototype - this is to be implemented later
-        """
         self.__populate_lines_with_comments()
         self.__attach_comments_to_lines()
 
     def __populate_lines_with_comments(self) -> None:
         """This method populates the lines_with_comments dictionary with the line number and the comment on that line
 
-        Args:
-
-        Returns:
-            None
+        Note:
+            If a line is added as true, that means that the line is a lone comment (there is no code on that line)
         """
         with self.__file_path.open(mode='r') as configuration_file:
             for line_num, line in enumerate(configuration_file):
-                line = line.strip()
-                if "#" in line:
-                    self.__lines_with_comments.update({line_num: line})
+                if re.search(r"^\s*#.*$", line):
+                    self.__lines_with_comments.update({line_num: (line, True)})
+                elif "#" in line:
+                    self.__lines_with_comments.update({line_num: (line, False)})
 
     def __attach_comments_to_lines(self) -> None:
         """This method attaches comments to the next line
@@ -76,9 +64,16 @@ class CommentHandling:
         with self.__file_path.open(mode='r') as configuration_file:
             lines = configuration_file.readlines()
             for comment_line_num in self.__lines_with_comments:
-                self.__comments_attached_to_line.update({
-                    self.__lines_with_comments.get(comment_line_num, ""): lines[comment_line_num + 1].strip()
-                })
+                if self.__lines_with_comments[comment_line_num][1]:
+                    self.__comments_attached_to_line.update({
+                        lines[comment_line_num + 1]: self.__lines_with_comments.get(comment_line_num)
+                    })
+                else:
+                    comment = lines[comment_line_num].split("#")[1]
+                    rest_of_line = lines[comment_line_num].split("#")[0]
+                    self.__comments_attached_to_line.update({
+                        rest_of_line: (comment, False)
+                    })
 
     def get_file_without_comments(self) -> str:
         """This method deletes the comments from the file
@@ -101,13 +96,11 @@ class CommentHandling:
                     new_file += line
         return new_file
 
-    def get_comments_attached_to_line(self) -> dict[str, str]:
+    def get_comments_attached_to_line(self) -> dict[str, (str, bool)]:
         """get the self.__comments_attached_to_line dictionary
 
-        Args:
-
         Returns:
-            comments_attached_to_line: str - the comments attached to line dictionary
+            comments_attached_to_line: dict[str, (str, bool)] - the comments attached to line dictionary
         """
         return self.__comments_attached_to_line
 
@@ -133,9 +126,9 @@ class Decomposer:
         self.__tree: DecomposerTree = tree
         if (not self.__file_path.exists()) or (self.__file_path.is_dir()):
             raise FileNotFoundError("The configuration file does not exist")
-        comment_handling = CommentHandling(file_path)
-        comment_handling.extract_comments()
-        self.__reading_the_full_file(comment_handling)
+        self.__comment_handling = CommentHandling(file_path)
+        self.__comment_handling.extract_comments()
+        self.__reading_the_full_file()
         self.__managing_headers()
         self.__managing_the_rest_of_the_file()
 
@@ -159,12 +152,8 @@ class Decomposer:
         """
         self.__tree = new_tree
 
-    def __reading_the_full_file(self, comment_handling: CommentHandling) -> None:
+    def __reading_the_full_file(self) -> None:
         """Opens the file and reads it all into one string, possible due to Nix not relying on indentations
-
-        Args:
-            comment_handling: CommentHandling - The comment handling object to retrieve a version of the file that
-            does not contain comments
 
         Returns:
             None
@@ -173,7 +162,7 @@ class Decomposer:
             This is done to make the file easier to interpret
         """
         self.__full_file: str = ""
-        lines = comment_handling.get_file_without_comments()
+        lines = self.__comment_handling.get_file_without_comments()
         for line in lines:
             self.__full_file += line.replace("\n", " ")
 
@@ -209,6 +198,13 @@ class Decomposer:
         rest_of_file: str = self.cleaning_the_configuration(self.__full_file[self.__full_file.index("}") + 1:])
         groups = self.__forming_groups_dict(rest_of_file)
         rest_of_file_split: list = rest_of_file.split(" ")
+        for bit in range(len(rest_of_file_split)):
+            try:
+                if re.search(r"^'\S*\s*[^']$", rest_of_file_split[bit]):
+                    rest_of_file_split[bit] += " " + rest_of_file_split[bit+1]
+                    del rest_of_file_split[bit+1]
+            except IndexError:
+                break  # Index errors are ok because we are deleting from the list
         equals_locations: list = self.__finding_equals_signs(rest_of_file_split)
         iterator.previous_prepend = ""
 
@@ -303,8 +299,8 @@ class Decomposer:
         """
         file = re.sub(r"\s+", " ", file)
         file = re.sub("=", " = ", file)
-        file = re.sub("}", " } ", file)
-        file = re.sub("{", " { ", file)
+        file = re.sub(r"\s}", " } ", file)
+        file = re.sub(r"\s{", " { ", file)
         file = re.sub("\"", "'", file)  # For easier handling of strings
         file = re.sub(";", " ; ", file)  # For with clauses
         file = re.sub(r"}\s*;", "}; ", file)
@@ -357,3 +353,6 @@ class Decomposer:
             groups.pop(largest_group[0])
             new_groups.update({largest_group[0]: (largest_group[1][0], largest_group[1][1])})
         return new_groups
+
+    def get_comments_attached_to_line(self) -> dict[str, str]:
+        return self.__comment_handling.get_comments_attached_to_line()

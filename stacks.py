@@ -1,10 +1,8 @@
 """Contains the stacks and queue implementations used in throughout the program
 
 Note:
-    Inheritance is useless due to all of the stacks being of different data types
+    Inheritance is useless due to all the stacks being of different data types
 """
-from tree import Node
-
 from textual.widgets import ListItem
 
 
@@ -123,48 +121,3 @@ class OperationsQueue:
         """
 
         return self.__queue
-
-
-class NodeStack:
-    """An implementation of the stack data-structure for the dfs in Composer"""
-
-    def __init__(self) -> None:
-        """Creates the stack and the stack variables"""
-
-        self.__stack_array: list[Node] = []
-
-    def pop(self) -> Node:
-        """Pops the tops element of the stack
-
-        Returns:
-            Node - the top most element in the stack
-        """
-
-        return self.__stack_array.pop()
-
-    def push(self, item: Node) -> None:
-        """Pushes an element on to the stack
-
-        Args:
-            item: Node - the item to be added to the stack
-        """
-
-        self.__stack_array.append(item)
-
-    def peek(self) -> Node:
-        """Returns the uppermost value in the stack without removing it
-
-        Returns:
-            ListItem - the top most element in the stack
-        """
-
-        return self.__stack_array[-1]
-
-    def get_len(self) -> int:
-        """Returns the full stacks length
-
-        Returns:
-            int - the full stacks length
-        """
-
-        return len(self.__stack_array)

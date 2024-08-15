@@ -1,11 +1,11 @@
 """Ui tests"""
-from errors import CrazyError
+from errors import CrazyError, NoValidHeadersNode
 from parsing import ParsingOptions, Types
 from decomposer import DecomposerTree, Decomposer
 from tree import VariableNode, ConnectorNode, Node
 from help_screens import MainHelpScreen, OptionsHelpScreen, SectionOptionsHelpScreen
 from custom_types import UIVariableNode, UIConnectorNode
-from stacks import OperationsStack, OperationsQueue, NodeStack
+from stacks import OperationsStack, OperationsQueue
 
 from pathlib import Path
 import re
@@ -16,37 +16,129 @@ from textual.widgets import Input, Label, ListView, ListItem, OptionList, Tree, 
     TabPane, Button, RadioSet
 
 OPTIONS_LOCATION: str = "/home/max/options.json"
-FILE_LOCATION: str = "/home/max/nea/NEA/configuration.nix"
+FILE_LOCATION: str = "/home/max/.config/home-manager/home.nix"
+
+
+class ComposerIterator:
+    prepend: str = ""
+    previous_prepend: str = ""
+    lines: str = ""
 
 
 class Composer:
-    def __init__(self, tree: DecomposerTree):
-        self.__tree: DecomposerTree = tree
+    def __init__(self, decomposer: Decomposer):
+        self.__tree: DecomposerTree = decomposer.get_tree()
+        self.__comments: dict[str, str] = decomposer.get_comments_attached_to_line()
         self.__file_location = FILE_LOCATION + ".new"
+        self.__composer_iterator = ComposerIterator()
         self.write_to_file()
 
     def write_to_file(self):
+        self.__separate_and_add_headers()
+        self.__work_out_lines(self.__tree.get_root())
+        self.__add_comments()
         with open(self.__file_location, "w") as file:
-            file.writelines(self.__work_out_lines(self.__tree.get_root()))
+            file.write(self.__composer_iterator.lines)
 
-    def __work_out_lines(self, node: ConnectorNode) -> list[str]:
-        lines: list[str] = []
-        stack = NodeStack()
-        node.set_discovered()
-        for singular_node in node.get_connected_nodes():
-            stack.push(singular_node)
-        while stack.get_len() > 0:
-            for w in stack.peek().get_connected_nodes():
-                if not w.get_discovered():
-                    if isinstance(w, ConnectorNode):
-                        lines.append(w.get_name()+"\n")
+    def __work_out_lines(self, node: Node) -> None:
+        if isinstance(node, ConnectorNode):
+            if len(node.get_connected_nodes()) > 1:
+                if self.__composer_iterator.lines[-1] != ":":
+                    if self.__composer_iterator.lines[-1] == ".":
+                        self.__composer_iterator.lines += node.get_name() + " = {\n"
+                    elif self.__composer_iterator.lines[-1] == "\n":
+                        self.__composer_iterator.lines += self.__composer_iterator.prepend + node.get_name() + " = {\n"
                     else:
-                        lines.append("      " + w.get_data()+"\n")
-                    w.set_discovered()
-                    for singular_node in w.get_connected_nodes():
-                        stack.push(singular_node)
-            stack.pop()
-        return lines
+                        raise CrazyError
+                else:
+                    self.__composer_iterator.lines += "\n\n{\n"
+                self.__composer_iterator.previous_prepend = self.__composer_iterator.prepend
+                self.__composer_iterator.prepend += "  "
+                for singular_node in node.get_connected_nodes():
+                    self.__work_out_lines(singular_node)
+                if self.__composer_iterator.previous_prepend != "":
+                    self.__composer_iterator.lines += self.__composer_iterator.previous_prepend + "};\n"
+                else:  # Then it is the end of the file
+                    self.__composer_iterator.lines += self.__composer_iterator.previous_prepend + "}\n"
+                self.__composer_iterator.prepend = self.__composer_iterator.previous_prepend
+                self.__composer_iterator.previous_prepend = self.__composer_iterator.previous_prepend[2:]
+                if len(self.__composer_iterator.prepend) == 2:
+                    self.__composer_iterator.lines += "\n"
+            elif len(node.get_connected_nodes()) == 1:
+                if self.__composer_iterator.lines[-1] == ".":
+                    self.__composer_iterator.lines += node.get_name() + "."
+                elif self.__composer_iterator.lines[-1] == "\n":
+                    self.__composer_iterator.lines += self.__composer_iterator.prepend + node.get_name() + "."
+                else:
+                    raise CrazyError
+                self.__work_out_lines(node.get_connected_nodes()[0])
+            else:
+                pass
+        elif isinstance(node, VariableNode):
+            data = node.get_name().split(".")[-1] + " = "
+
+            if node.get_type() == Types.LIST:
+                if "'" not in node.get_data():
+                    data_as_list = node.get_data().split(" ")
+                    data_as_list = data_as_list[1:-1]
+                    if len(data_as_list) >= 2:
+                        data += "[\n"
+                        for list_item in data_as_list:
+                            data += self.__composer_iterator.prepend + "  " + list_item + "\n"
+                        data += self.__composer_iterator.prepend + "]"
+                    else:
+                        data += node.get_data()
+            else:
+                data += node.get_data()
+
+            #  to change ' back into "
+            data = re.sub("'", "\"", data)
+
+            if node.get_type() == Types.LIST and "(" in data:  # needs to be handled with a with clause
+                with_clause = data[data.index("(") + 1:data.index(")")]
+                data = re.sub(rf"\({with_clause}\)\.", "", data)
+                data = data.split("=")[0] + "= with " + with_clause + ";" + data.split("=")[1]
+
+            if self.__composer_iterator.lines[-1] == ".":
+                self.__composer_iterator.lines += data + ";\n"
+            elif self.__composer_iterator.lines[-1] == "\n":
+                self.__composer_iterator.lines += self.__composer_iterator.prepend + data + ";\n"
+            else:
+                raise CrazyError
+
+    def __separate_and_add_headers(self) -> None:
+        headers_node = None
+        for singular_node in self.__tree.get_root().get_connected_nodes():
+            if singular_node.get_name() == "headers":
+                headers_node = singular_node
+        if isinstance(headers_node, VariableNode):
+            headers: str = headers_node.get_data()
+            headers = re.sub(r"\[|]", "", headers)
+            headers_as_list = headers.split(", ")
+            if len(headers_as_list) >= 4:
+                self.__composer_iterator.lines += "{ "
+                for header in headers_as_list:
+                    if header != headers_as_list[-1]:  # to avoid putting a comma on the final header
+                        self.__composer_iterator.lines += header.strip() + ",\n"
+                    else:
+                        self.__composer_iterator.lines += header.strip() + "\n"
+                self.__composer_iterator.lines += "}:"
+            else:
+                self.__composer_iterator.lines += "{" + headers + "}:"
+            self.__tree.get_root().remove_child_variable_node(headers_node.get_name() + "=" + headers_node.get_data())
+        else:
+            raise NoValidHeadersNode
+
+    def __add_comments(self) -> None:
+        for key in reversed(self.__comments):
+            # self.__composer_iterator.lines += key + " : " + str(self.__comments[key]) + "\n"
+            if self.__comments[key][1]:
+                self.__composer_iterator.lines = re.sub(re.escape(key), self.__comments[key][0]+key, self.__composer_iterator.lines)
+            else:
+                self.__composer_iterator.lines = re.sub(re.escape(key), key+self.__comments[key][0], self.__composer_iterator.lines)
+
+
+
 
 
 class ModifyScreen(ModalScreen[str]):
@@ -1191,8 +1283,7 @@ def main():
     decomposer = Decomposer(file_path=Path(FILE_LOCATION), tree=tree)
     ui = UI(FILE_LOCATION, decomposer)
     ui.run()
-    tree.quick_display(tree.get_root())
-    Composer(tree)
+    Composer(decomposer)
 
 
 if __name__ == "__main__":
