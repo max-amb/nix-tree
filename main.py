@@ -16,7 +16,7 @@ from textual.widgets import Input, Label, ListView, ListItem, OptionList, Tree, 
     TabPane, Button, RadioSet
 
 OPTIONS_LOCATION: str = "/home/max/options.json"
-FILE_LOCATION: str = "/home/max/.config/home-manager/home.nix"
+FILE_LOCATION: str = "/home/max/nea/NEA/configuration.nix"
 
 
 class ComposerIterator:
@@ -36,7 +36,6 @@ class Composer:
     def write_to_file(self):
         self.__separate_and_add_headers()
         self.__work_out_lines(self.__tree.get_root())
-        self.__add_comments()
         with open(self.__file_location, "w") as file:
             file.write(self.__composer_iterator.lines)
 
@@ -81,10 +80,20 @@ class Composer:
                 if "'" not in node.get_data():
                     data_as_list = node.get_data().split(" ")
                     data_as_list = data_as_list[1:-1]
-                    if len(data_as_list) >= 2:
+                    if len(data_as_list) >= 3:
                         data += "[\n"
                         for list_item in data_as_list:
                             data += self.__composer_iterator.prepend + "  " + list_item + "\n"
+                        data += self.__composer_iterator.prepend + "]"
+                    else:
+                        data += node.get_data()
+                else:
+                    data_as_list = node.get_data().split("' '")
+                    data_as_list = data_as_list[1:-1]
+                    if len(data_as_list) >= 3:
+                        data += "[\n"
+                        for list_item in data_as_list:
+                            data += self.__composer_iterator.prepend + "  '" + list_item + "'\n"
                         data += self.__composer_iterator.prepend + "]"
                     else:
                         data += node.get_data()
@@ -128,17 +137,6 @@ class Composer:
             self.__tree.get_root().remove_child_variable_node(headers_node.get_name() + "=" + headers_node.get_data())
         else:
             raise NoValidHeadersNode
-
-    def __add_comments(self) -> None:
-        for key in reversed(self.__comments):
-            # self.__composer_iterator.lines += key + " : " + str(self.__comments[key]) + "\n"
-            if self.__comments[key][1]:
-                self.__composer_iterator.lines = re.sub(re.escape(key), self.__comments[key][0]+key, self.__composer_iterator.lines)
-            else:
-                self.__composer_iterator.lines = re.sub(re.escape(key), key+self.__comments[key][0], self.__composer_iterator.lines)
-
-
-
 
 
 class ModifyScreen(ModalScreen[str]):
