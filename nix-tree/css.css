@@ -1,0 +1,115 @@
+MainHelpScreen {
+    align: center middle;
+}
+
+OptionsHelpScreen {
+    align: center middle;
+}
+
+SectionOptionsHelpScreen {
+    align: center middle;
+}
+
+OptionsScreen {
+    align: center middle;
+}
+
+SectionOptionsScreen {
+    align: center middle;
+}
+
+AddScreenVariableSelection {
+    align: center middle;
+}
+
+AddScreenPath {
+    align: center middle;
+}
+
+RecommendedTypeOrChooseType {
+    align: center middle;
+}
+
+HomeManagerGenerationScreen {
+    align: center middle;
+}
+
+AddScreenStringUnique {
+    align: center middle;
+    width: 50;
+    height: 3;
+}
+
+#mainhelptext {
+    border: panel darkorange;
+    padding: 0 1;
+    width: 66;
+    height: 14;
+}
+
+#optionshelptext {
+    border: panel darkslateblue;
+    padding: 0 1;
+    width: 50;
+    height: 14;
+}
+
+#sectionoptionshelptext {
+    border: panel coral;
+    padding: 0 1;
+    width: 50;
+    height: 14;
+}
+
+.modifytext {
+    border: panel darkorange;
+    padding: 1 1;
+    width: 65;
+    height: 13;
+    align: center middle;
+    content-align: center middle;
+}
+
+#buttons {
+    align: center middle;
+    content-align: center middle;
+}
+
+#recommend_buttons {
+    align: center middle;
+    content-align: center middle;
+}
+
+.box {
+    height: 2;
+    width: auto;
+    text-align: center;
+    content-align: center middle;
+}
+
+#delete {
+    height: 3;
+    width: auto;
+    text-align: center;
+    content-align: left middle;
+    align: left middle;
+    padding: 0 5
+}
+
+#modify {
+    height: 3;
+    width: auto;
+    text-align: center;
+    align: center middle;
+    content-align: center middle;
+    padding: 0 5
+}
+
+#exit {
+    height: 3;
+    width: auto;
+    text-align: center;
+    content-align: right middle;
+    align: right middle;
+    padding: 0 5
+}

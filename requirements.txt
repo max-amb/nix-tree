@@ -1,0 +1,2 @@
+linkify-it-py==2.0.3
+textual-dev==1.5.1
