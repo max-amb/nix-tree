@@ -1,0 +1,14 @@
+[project]
+name = "nix-tree_Max_Ambaum"
+version = "0.1.0"
+authors = [
+  { name="Max Ambaum", email="max_a@e.email" },
+]
+description = "A tool for viewing and editing your nix configuration as a tree"
+readme = "README.md"
+requires-python = ">=3.8"
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: GNU Affero General Public License v3",
+    "Operating System :: POSIX :: Linux",
+]

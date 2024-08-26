@@ -1250,7 +1250,7 @@ def start_ui(file_location: str, write_over: bool) -> None:
 
 def main():
     parser = argparse.ArgumentParser(prog="nix-tree",
-                                     description="Viewing and editing your nix configuration as a tree")
+                                     description="A tool for viewing and editing your nix configuration as a tree")
     parser.add_argument("file_location", type=str, default="/home/max/nea/NEA/configuration.nix",
                         help="The location of your nix configuration file")
     parser.add_argument("-w", "--writeover", default=False, action="store_true",
