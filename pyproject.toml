@@ -1,14 +1,23 @@
 [project]
-name = "nix-tree_Max_Ambaum"
+name = "nix-tree"
 version = "0.1.0"
 authors = [
   { name="Max Ambaum", email="max_a@e.email" },
 ]
 description = "A tool for viewing and editing your nix configuration as a tree"
 readme = "README.md"
-requires-python = ">=3.8"
+license = {file = "LICENSE"}
+requires-python = ">=3.10"  # Because of match statements
 classifiers = [
+    "Development Status :: 3 - Alpha",
     "Programming Language :: Python :: 3",
     "License :: OSI Approved :: GNU Affero General Public License v3",
     "Operating System :: POSIX :: Linux",
 ]
+dependencies = [
+  "linkify-it-py==2.0.3",
+  "textual-dev==1.5.1"
+]
+
+[project.scripts]
+nix-tree = "nix-tree.__main__:main"

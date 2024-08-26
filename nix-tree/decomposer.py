@@ -200,7 +200,8 @@ class Decomposer:
             headers.append(header.strip())
         self.__tree.add_branch(contents=f"headers=[ {', '.join(headers)} ]")
 
-    def prepare_the_file(self, file: str) -> list[str]:
+    @staticmethod
+    def prepare_the_file(file: str) -> list[str]:
         rest_of_file_split: list = file.split(" ")
         for bit in range(len(rest_of_file_split)):
             try:
@@ -269,7 +270,8 @@ class Decomposer:
                     iterator.prepend = iterator.previous_prepend
             iterator.equals_number += 1
 
-    def __checking_group(self, groups: dict[str, tuple[int, int]], location: int) -> str:
+    @staticmethod
+    def __checking_group(groups: dict[str, tuple[int, int]], location: int) -> str:
         """Checks which group the location in the string is
 
         Args:
@@ -286,7 +288,8 @@ class Decomposer:
                 to_be_prepended += group[0] + "."
         return to_be_prepended
 
-    def finding_equals_signs(self, file: list) -> list:
+    @staticmethod
+    def finding_equals_signs(file: list) -> list:
         """Iterates through the file - split on spaces - to find the equals signs positions
 
         Args:
@@ -307,7 +310,8 @@ class Decomposer:
                 locations.append((char_location, phrase_itr))
         return locations
 
-    def cleaning_the_configuration(self, file: str) -> str:
+    @staticmethod
+    def cleaning_the_configuration(file: str) -> str:
         """This cleans the configuration with regex substitution to make it possible to tokenize
 
         Args:
@@ -353,7 +357,8 @@ class Decomposer:
                 groups.update({entry[0]: new_entry_one})
         return self.__sort_groups(groups)
 
-    def __sort_groups(self, groups: dict[str, tuple[int, int]]) -> dict[str, tuple[int, int]]:
+    @staticmethod
+    def __sort_groups(groups: dict[str, tuple[int, int]]) -> dict[str, tuple[int, int]]:
         """Sorts the groups based on size in descending order
 
         Args:

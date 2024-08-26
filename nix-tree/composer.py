@@ -149,6 +149,6 @@ class Composer:
         file_split = self.__decomposer.prepare_the_file(file)
         equals_locations = self.__decomposer.finding_equals_signs(file_split)
         while iterator.equals_number <= len(equals_locations) - 1:
-            match rest_of_file_split[equals_locations[iterator.equals_number][1] + 1]:
+            match file_split[equals_locations[iterator.equals_number][1] + 1]:
                 case "{":
                     pass

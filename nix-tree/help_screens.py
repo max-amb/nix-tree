@@ -1,8 +1,8 @@
 """Contains the help screens for the UI"""
 
+from textual.app import ComposeResult
 from textual.screen import ModalScreen
 from textual.widgets import Markdown
-from textual.app import App, ComposeResult
 
 """The help text for the main menu"""
 MAINHELPTEXT = """\
