@@ -179,7 +179,7 @@ class Decomposer:
         self.__full_file: str = ""
         lines = self.__comment_handling.get_file_without_comments()
         for line in lines:
-            self.__full_file += line.replace("\n", " ")
+            self.__full_file += line
 
     def __managing_headers(self) -> None:
         """Adds headers to the tree
@@ -223,7 +223,7 @@ class Decomposer:
         """
         iterator = Iterator()
         rest_of_file: str = self.cleaning_the_configuration(self.__full_file[self.__full_file.index("}") + 1:])
-        groups = self.__forming_groups_dict(rest_of_file)
+        groups = self.forming_groups_dict(rest_of_file)
         rest_of_file_split = self.prepare_the_file(rest_of_file)
         equals_locations: list = self.finding_equals_signs(rest_of_file_split)
         iterator.previous_prepend = ""
@@ -233,7 +233,7 @@ class Decomposer:
                 case "{":
                     pass  # To stop brackets being added as variables
                 case "[":
-                    iterator.prepend += self.__checking_group(groups, equals_locations[iterator.equals_number][0])
+                    iterator.prepend += self.checking_group(groups, equals_locations[iterator.equals_number][0])
                     iterator.prepend += rest_of_file_split[equals_locations[iterator.equals_number][1] - 1] + "="
                     # Should not be an index error unless the Nix file is invalid
                     in_the_brackets: list = []
@@ -244,7 +244,7 @@ class Decomposer:
                     self.__tree.add_branch(f"{iterator.prepend}[ {' '.join(in_the_brackets)} ]")
                     iterator.prepend = iterator.previous_prepend
                 case "with":
-                    iterator.prepend += self.__checking_group(groups, equals_locations[iterator.equals_number][0])
+                    iterator.prepend += self.checking_group(groups, equals_locations[iterator.equals_number][0])
                     iterator.prepend += rest_of_file_split[equals_locations[iterator.equals_number][1] - 1] + "="
                     in_the_brackets: list = []
                     for phrase_itr in range(equals_locations[iterator.equals_number][1] + 5, len(rest_of_file)):
@@ -255,7 +255,7 @@ class Decomposer:
                     self.__tree.add_branch(f"{iterator.prepend}[ {' '.join(in_the_brackets)} ]")
                     iterator.prepend = iterator.previous_prepend
                 case "lib.mkDefault" | "lib.mkForce":
-                    iterator.prepend += self.__checking_group(groups, equals_locations[iterator.equals_number][0])
+                    iterator.prepend += self.checking_group(groups, equals_locations[iterator.equals_number][0])
                     iterator.prepend += rest_of_file_split[equals_locations[iterator.equals_number][1] - 1] + "="
                     iterator.prepend += rest_of_file_split[equals_locations[iterator.equals_number][1] + 1] + "."
                     self.__tree.add_branch(iterator.prepend +
@@ -263,7 +263,7 @@ class Decomposer:
                                            )
                     iterator.prepend = iterator.previous_prepend
                 case _:  # Then it is a variable
-                    iterator.prepend += self.__checking_group(groups, equals_locations[iterator.equals_number][0])
+                    iterator.prepend += self.checking_group(groups, equals_locations[iterator.equals_number][0])
                     iterator.prepend += rest_of_file_split[equals_locations[iterator.equals_number][1] - 1] + "="
                     self.__tree.add_branch(
                         iterator.prepend + rest_of_file_split[equals_locations[iterator.equals_number][1] + 1])
@@ -271,7 +271,7 @@ class Decomposer:
             iterator.equals_number += 1
 
     @staticmethod
-    def __checking_group(groups: dict[str, tuple[int, int]], location: int) -> str:
+    def checking_group(groups: dict[str, tuple[int, int]], location: int) -> str:
         """Checks which group the location in the string is
 
         Args:
@@ -332,7 +332,7 @@ class Decomposer:
         file = re.sub(r"\s+", " ", file)
         return file
 
-    def __forming_groups_dict(self, file: str) -> dict[str, tuple[int, int]]:
+    def forming_groups_dict(self, file: str) -> dict[str, tuple[int, int]]:
         """Forms the groups dictionary which contains all the groups and their sections
 
         Args:
@@ -386,4 +386,4 @@ class Decomposer:
         self.__comment_handling.attach_comments_to_nodes(self.__tree)
 
     def get_file(self) -> str:
-        return self.cleaning_the_configuration(self.__full_file)
+        return self.__full_file

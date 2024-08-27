@@ -16,6 +16,10 @@ class ComposerIterator:
 
 class ComposerIteratorEdit:
     equals_number = 0
+    file = ""
+    file_split = []
+    groups_dict = {}
+    equals_locations = []
 
 class Composer:
     def __init__(self, decomposer: Decomposer, file_location: str, write_over: bool, operations: list[str]):
@@ -28,16 +32,13 @@ class Composer:
         else:
             self.__file_location = file_location + ".new"
         self.__composer_iterator = ComposerIterator()
-        self.write_to_file(False)
+        self.write_to_file()
 
-    def write_to_file(self, new_file: bool = True):
-        if new_file:
-            self.__separate_and_add_headers()
-            self.__work_out_lines(self.__tree.get_root())
-            with open(self.__file_location, "w", encoding="utf-8") as file:
-                file.write(self.__composer_iterator.lines + "}\n")
-        else:
-            self.__work_on_existing_file()
+    def write_to_file(self):
+        self.__separate_and_add_headers()
+        self.__work_out_lines(self.__tree.get_root())
+        with open(self.__file_location, "w", encoding="utf-8") as file:
+            file.write(self.__composer_iterator.lines + "}\n")
 
     def __work_out_lines(self, node: Node) -> None:
         if isinstance(node, ConnectorNode):
@@ -144,11 +145,32 @@ class Composer:
             raise NoValidHeadersNode
 
     def __work_on_existing_file(self) -> None:
-        iterator = ComposerIteratorEdit()
-        file = self.__decomposer.get_file()
-        file_split = self.__decomposer.prepare_the_file(file)
-        equals_locations = self.__decomposer.finding_equals_signs(file_split)
-        while iterator.equals_number <= len(equals_locations) - 1:
-            match file_split[equals_locations[iterator.equals_number][1] + 1]:
-                case "{":
-                    pass
+        self.__iterator = ComposerIteratorEdit()
+        self.__iterator.file = self.__decomposer.get_file()
+        self.__iterator.groups_dict = self.__decomposer.forming_groups_dict(self.__iterator.file)
+        self.__iterator.file_split = self.__decomposer.prepare_the_file(self.__iterator.file)
+        self.__iterator.equals_locations = self.__decomposer.finding_equals_signs(self.__iterator.file_split)
+        for operation in self.__operations:
+            if operation.split(" ")[0] == "Change":
+                self.__change_operation(operation)
+            else:
+                raise Exception(operation)
+
+    def __change_operation(self, operation: str):
+        change_command: str = operation[7:]  # Can't use space splits as it changes the lists spaces
+        pre: list = change_command.split("->")[0].strip().split("=")
+        post: list = change_command.split("->")[1].strip().split("=")
+        while self.__iterator.equals_number <= len(self.__iterator.equals_locations) - 1:
+            if self.__iterator.file_split[self.__iterator.equals_locations[self.__iterator.equals_number][1] + 1].strip() == "{":
+                self.__iterator.equals_number += 1
+            else: 
+                group_in = self.__decomposer.checking_group(self.__iterator.groups_dict, self.__iterator.equals_locations[self.__iterator.equals_number][0])
+                raise Exception(self.__iterator.groups_dict)
+                before_the_equals = self.__iterator.file_split[self.__iterator.equals_locations[self.__iterator.equals_number][1] -1 ]
+                full_path = group_in + before_the_equals
+                raise Exception(full_path)
+                if full_path == pre[0]:
+                    # re.match(r"(.*)ports\s*=[^;]*(.*)", self.__iterator.file)
+                    raise Exception(self.__iterator.file)
+                else:
+                    self.__iterator.equals_number += 1
