@@ -3,7 +3,7 @@ from pathlib import Path
 import re
 
 from stacks import GroupsStack
-from tree import DecomposerTree
+from tree import DecomposerTree, Node, VariableNode
 
 
 class Iterator:
@@ -68,13 +68,17 @@ class CommentHandling:
     def __compressing_comments(self) -> None:
         current_addition: list[tuple[str, bool]] = []
         for line_with_comment_itr in range(len(self.__lines_with_comments)):
+
             if self.__lines_with_comments[list(self.__lines_with_comments.keys())[line_with_comment_itr]][1]:
-                current_addition.append(
-                    self.__lines_with_comments[list(self.__lines_with_comments.keys())[line_with_comment_itr]])
+                current_addition.append((
+                    self.__lines_with_comments[list(self.__lines_with_comments.keys())[line_with_comment_itr]][0].strip(),
+                    self.__lines_with_comments[list(self.__lines_with_comments.keys())[line_with_comment_itr]][1],
+                ))
             else:
                 full_line = self.__lines_with_comments[list(self.__lines_with_comments.keys())[line_with_comment_itr]][0]
                 comment = full_line.split("#")[1]
                 current_addition.append(("#"+comment, False))
+
             if line_with_comment_itr != len(self.__lines_with_comments) - 1:
                 if list(self.__lines_with_comments.keys())[line_with_comment_itr + 1] == \
                         list(self.__lines_with_comments.keys())[line_with_comment_itr] + 1 and \
@@ -89,6 +93,8 @@ class CommentHandling:
                     {list(self.__lines_with_comments.keys())[line_with_comment_itr] + 1: current_addition})
                 current_addition = []
 
+    def get_comments_for_attaching(self) -> dict[int, list[tuple[str, bool]]]:
+        return self.__comments
 
 class Decomposer:
     """Class to handle the decomposition of the Nix file and addition of tokens to the tree"""
@@ -169,8 +175,7 @@ class Decomposer:
             headers.append(header.strip())
         self.__tree.add_branch(contents=f"headers=[ {', '.join(headers)} ]")
 
-    @staticmethod
-    def prepare_the_file(file: str) -> list[str]:
+    def __prepare_the_file(self, file: str) -> list[str]:
         rest_of_file_split: list = file.split(" ")
         for bit in range(len(rest_of_file_split)):
             try:
@@ -191,19 +196,31 @@ class Decomposer:
         Note:
             Check the flowchart in the writeup to learn more about this!
         """
+        comments = self.__comment_handling.get_comments_for_attaching()
         iterator = Iterator()
-        rest_of_file: str = self.cleaning_the_configuration(self.__full_file[self.__full_file.index("}") + 1:])
+        rest_of_file: str = self.__cleaning_the_configuration(self.__full_file[self.__full_file.index("}") + 1:])
         groups = self.forming_groups_dict(rest_of_file)
-        rest_of_file_split = self.prepare_the_file(rest_of_file)
+        rest_of_file_split = self.__prepare_the_file(rest_of_file)
         equals_locations: list = self.finding_equals_signs(rest_of_file_split)
+        equals_locations = self.__find_equal_locations_lines(equals_locations)
+        comments_attached_to_id: dict[str, str] = {}
         iterator.previous_prepend = ""
 
         while iterator.equals_number <= len(equals_locations) - 1:
+            try:
+                comment = comments.pop(equals_locations[iterator.equals_number][2])
+                comments_attached_to_id.update({
+                    self.__checking_group(groups, equals_locations[iterator.equals_number][0]) +
+                    rest_of_file_split[equals_locations[iterator.equals_number][1] - 1] :
+                    comment
+                })
+            except KeyError:  # If there isn't a comment attached
+                pass
             match rest_of_file_split[equals_locations[iterator.equals_number][1] + 1]:
                 case "{":
                     pass  # To stop brackets being added as variables
                 case "[":
-                    iterator.prepend += self.checking_group(groups, equals_locations[iterator.equals_number][0])
+                    iterator.prepend += self.__checking_group(groups, equals_locations[iterator.equals_number][0])
                     iterator.prepend += rest_of_file_split[equals_locations[iterator.equals_number][1] - 1] + "="
                     # Should not be an index error unless the Nix file is invalid
                     in_the_brackets: list = []
@@ -214,7 +231,7 @@ class Decomposer:
                     self.__tree.add_branch(f"{iterator.prepend}[ {' '.join(in_the_brackets)} ]")
                     iterator.prepend = iterator.previous_prepend
                 case "with":
-                    iterator.prepend += self.checking_group(groups, equals_locations[iterator.equals_number][0])
+                    iterator.prepend += self.__checking_group(groups, equals_locations[iterator.equals_number][0])
                     iterator.prepend += rest_of_file_split[equals_locations[iterator.equals_number][1] - 1] + "="
                     in_the_brackets: list = []
                     for phrase_itr in range(equals_locations[iterator.equals_number][1] + 5, len(rest_of_file)):
@@ -225,7 +242,7 @@ class Decomposer:
                     self.__tree.add_branch(f"{iterator.prepend}[ {' '.join(in_the_brackets)} ]")
                     iterator.prepend = iterator.previous_prepend
                 case "lib.mkDefault" | "lib.mkForce":
-                    iterator.prepend += self.checking_group(groups, equals_locations[iterator.equals_number][0])
+                    iterator.prepend += self.__checking_group(groups, equals_locations[iterator.equals_number][0])
                     iterator.prepend += rest_of_file_split[equals_locations[iterator.equals_number][1] - 1] + "="
                     iterator.prepend += rest_of_file_split[equals_locations[iterator.equals_number][1] + 1] + "."
                     self.__tree.add_branch(iterator.prepend +
@@ -233,15 +250,15 @@ class Decomposer:
                                            )
                     iterator.prepend = iterator.previous_prepend
                 case _:  # Then it is a variable
-                    iterator.prepend += self.checking_group(groups, equals_locations[iterator.equals_number][0])
+                    iterator.prepend += self.__checking_group(groups, equals_locations[iterator.equals_number][0])
                     iterator.prepend += rest_of_file_split[equals_locations[iterator.equals_number][1] - 1] + "="
                     self.__tree.add_branch(
                         iterator.prepend + rest_of_file_split[equals_locations[iterator.equals_number][1] + 1])
                     iterator.prepend = iterator.previous_prepend
             iterator.equals_number += 1
+        self.__add_comments_to_nodes(self.__tree.get_root(), "", comments_attached_to_id)
 
-    @staticmethod
-    def checking_group(groups: dict[str, tuple[int, int]], location: int) -> str:
+    def __checking_group(self, groups: dict[str, tuple[int, int]], location: int) -> str:
         """Checks which group the location in the string is
 
         Args:
@@ -280,8 +297,7 @@ class Decomposer:
                 locations.append((char_location, phrase_itr))
         return locations
 
-    @staticmethod
-    def cleaning_the_configuration(file: str) -> str:
+    def __cleaning_the_configuration(self, file: str) -> str:
         """This cleans the configuration with regex substitution to make it possible to tokenize
 
         Args:
@@ -327,8 +343,7 @@ class Decomposer:
                 groups.update({entry[0]: new_entry_one})
         return self.__sort_groups(groups)
 
-    @staticmethod
-    def __sort_groups(groups: dict[str, tuple[int, int]]) -> dict[str, tuple[int, int]]:
+    def __sort_groups(self, groups: dict[str, tuple[int, int]]) -> dict[str, tuple[int, int]]:
         """Sorts the groups based on size in descending order
 
         Args:
@@ -349,5 +364,33 @@ class Decomposer:
             new_groups.update({largest_group[0]: (largest_group[1][0], largest_group[1][1])})
         return new_groups
 
-    def get_file(self) -> str:
-        return self.__full_file
+    def __find_equal_locations_lines(self, equals_locations: list) -> list:
+        lines: list[str] = self.__file_path.open(mode='r').readlines()
+
+        # Cleaning
+        for line in range(len(lines)):
+            lines[line] = lines[line].strip()
+            if "#" in lines[line]:
+                lines[line] = lines[line].split("#")[0].strip()
+
+        equals_num = 0
+        for line in range(len(lines)):
+            number_of_equals = lines[line].count("=")
+            for equals in range(number_of_equals):
+                equals_locations[equals_num] = (equals_locations[equals_num][0], equals_locations[equals_num][1], line)
+                equals_num += 1
+        return equals_locations
+
+    def __add_comments_to_nodes(self, node: Node, prepend: str, comments: dict[str: str]):
+        prepend += "."+node.get_name().split("=")[0]
+        try:
+            if isinstance(node, VariableNode):
+                comment = comments.pop(node.get_name())
+                node.set_comments(comment)
+            else:
+                comment = comments.pop(prepend[2:])
+                node.set_comments(comment)
+        except KeyError:
+            pass
+        for child in node.get_connected_nodes():
+            self.__add_comments_to_nodes(child, prepend, comments)

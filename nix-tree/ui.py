@@ -460,7 +460,6 @@ class UI(App[list[str]]):
         """
         tree: Tree[dict] = Tree(self.__file_name)
         tree.root.expand()
-        self.__decomposer.attach_comments_to_nodes()
         self.__decomposer.get_tree().add_to_ui(self.__decomposer.get_tree().get_root(), tree.root)
 
         with TabbedContent():
@@ -491,7 +490,7 @@ class UI(App[list[str]]):
         yield Footer()
 
 
-def start_ui(file_location: str, write_over: bool) -> None:
+def start_ui(file_location: str, write_over: bool, comments: bool) -> None:
     """Makes a DecomposerTree object along with calling the decomposer object to fill the tree, it then passes it into
     the ui object from which it runs the ui"""
 
@@ -504,6 +503,6 @@ def start_ui(file_location: str, write_over: bool) -> None:
         if any(substring in ' '.join(command) for substring in ["sudo", "home-manager", "activate"]):
             subprocess.run(command, check=True)  # To error out if the command fails
             sleep(5)
-            start_ui(file_location, write_over)
+            start_ui(file_location, write_over, comments)
         else:
-            Composer(decomposer, file_location, write_over, command)
+            Composer(decomposer, file_location, write_over, comments)

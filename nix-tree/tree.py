@@ -40,7 +40,7 @@ class Node:
         """
 
         self.__name = name
-        self.__comment = ""
+        self.__comments = None
 
     def get_name(self) -> str:
         """Returns the nodes name
@@ -68,11 +68,11 @@ class Node:
         """
         return []
 
-    def set_comment(self, comment: str) -> None:
-        self.__comment = comment
+    def set_comments(self, comments: list[str]) -> None:
+        self.__comments = comments
 
-    def get_comment(self) -> str:
-        return self.__comment
+    def get_comments(self) -> list[str]:
+        return self.__comments
 
 class ConnectorNode(Node):
     """The connector node, it is a part of the path
