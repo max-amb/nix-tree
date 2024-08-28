@@ -1,4 +1,4 @@
-"""The main python file!"""
+"""The module containing the decomposer"""
 from pathlib import Path
 import re
 
@@ -26,14 +26,10 @@ class CommentHandling:
             Error handling is managed in the decomposer class, so it does not need to be implemented here
         """
         self.__file_path = file_path
-        self.__lines_with_comments: dict[int, (str, bool)] = {}
-        self.__comments_attached_to_line: dict[str, (str, bool)] = {}
-
-    def extract_comments(self) -> None:
-        """Extracts the comments from the file and attaches them to the next line of code"""
-
+        self.__lines_with_comments: dict[int, tuple[str, bool]] = {}
+        self.__comments: dict[int, list[tuple[str, bool]]] = {}
         self.__populate_lines_with_comments()
-        self.__attach_comments_to_lines()
+        self.__compressing_comments()
 
     def __populate_lines_with_comments(self) -> None:
         """This method populates the lines_with_comments dictionary with the line number and the comment on that line
@@ -47,33 +43,6 @@ class CommentHandling:
                     self.__lines_with_comments.update({line_num: (line, True)})
                 elif "#" in line:
                     self.__lines_with_comments.update({line_num: (line, False)})
-
-    def __attach_comments_to_lines(self) -> None:
-        """This method attaches comments to the next line
-
-        Args:
-
-        Returns:
-            None
-
-        Note:
-            Currently this function assumes the next line can be attached to -
-            this could be re-attached recursively then, with comments attached to lines done first and then
-            comments attached to comments
-        """
-        with self.__file_path.open(mode='r') as configuration_file:
-            lines = configuration_file.readlines()
-            for comment_line_num in self.__lines_with_comments:
-                if self.__lines_with_comments[comment_line_num][1]:
-                    self.__comments_attached_to_line.update({
-                        lines[comment_line_num + 1]: self.__lines_with_comments.get(comment_line_num)
-                    })
-                else:
-                    comment = lines[comment_line_num].split("#")[1]
-                    rest_of_line = lines[comment_line_num].split("#")[0]
-                    self.__comments_attached_to_line.update({
-                        rest_of_line: (comment, False)
-                    })
 
     def get_file_without_comments(self) -> str:
         """This method deletes the comments from the file
@@ -96,28 +65,29 @@ class CommentHandling:
                     new_file += line
         return new_file
 
-    def get_comments_attached_to_line(self) -> dict[str, (str, bool)]:
-        """get the self.__comments_attached_to_line dictionary
-
-        Returns:
-            comments_attached_to_line: dict[str, (str, bool)] - the comments attached to line dictionary
-        """
-        return self.__comments_attached_to_line
-
-    def __clean_comments_dictionary(self) -> None:
-        changes_made = True
-        while changes_made:
-            changes_made = False
-            for line_attached_to_comment in self.__comments_attached_to_line:
-                if line_attached_to_comment == "\n" or line_attached_to_comment == "":
-                    del self.__comments_attached_to_line[line_attached_to_comment]
-                    changes_made = True
-                    break
-
-    def attach_comments_to_nodes(self, tree: DecomposerTree):
-        # self.__clean_comments_dictionary()
-        # raise Exception(self.__comments_attached_to_line)
-        pass
+    def __compressing_comments(self) -> None:
+        current_addition: list[tuple[str, bool]] = []
+        for line_with_comment_itr in range(len(self.__lines_with_comments)):
+            if self.__lines_with_comments[list(self.__lines_with_comments.keys())[line_with_comment_itr]][1]:
+                current_addition.append(
+                    self.__lines_with_comments[list(self.__lines_with_comments.keys())[line_with_comment_itr]])
+            else:
+                full_line = self.__lines_with_comments[list(self.__lines_with_comments.keys())[line_with_comment_itr]][0]
+                comment = full_line.split("#")[1]
+                current_addition.append(("#"+comment, False))
+            if line_with_comment_itr != len(self.__lines_with_comments) - 1:
+                if list(self.__lines_with_comments.keys())[line_with_comment_itr + 1] == \
+                        list(self.__lines_with_comments.keys())[line_with_comment_itr] + 1 and \
+                        self.__lines_with_comments[list(self.__lines_with_comments.keys())[line_with_comment_itr]][1]:
+                    continue
+            if not self.__lines_with_comments[list(self.__lines_with_comments.keys())[line_with_comment_itr]][1]:
+                self.__comments.update(
+                    {list(self.__lines_with_comments.keys())[line_with_comment_itr]: current_addition})
+                current_addition = []
+            else:
+                self.__comments.update(
+                    {list(self.__lines_with_comments.keys())[line_with_comment_itr] + 1: current_addition})
+                current_addition = []
 
 
 class Decomposer:
@@ -142,7 +112,6 @@ class Decomposer:
         if (not self.__file_path.exists()) or (self.__file_path.is_dir()):
             raise FileNotFoundError("The configuration file does not exist")
         self.__comment_handling = CommentHandling(file_path)
-        self.__comment_handling.extract_comments()
         self.__reading_the_full_file()
         self.__managing_headers()
         self.__managing_the_rest_of_the_file()
@@ -205,9 +174,10 @@ class Decomposer:
         rest_of_file_split: list = file.split(" ")
         for bit in range(len(rest_of_file_split)):
             try:
-                if re.search(r"^'\S*\s*[^']$", rest_of_file_split[bit]):  # Fixes issue with strings being split on spaces inside the string
-                    rest_of_file_split[bit] += " " + rest_of_file_split[bit+1]
-                    del rest_of_file_split[bit+1]
+                if re.search(r"^'\S*\s*[^']$", rest_of_file_split[
+                    bit]):  # Fixes issue with strings being split on spaces inside the string
+                    rest_of_file_split[bit] += " " + rest_of_file_split[bit + 1]
+                    del rest_of_file_split[bit + 1]
             except IndexError:
                 break  # Index errors are ok because we are deleting from the list
         return rest_of_file_split
@@ -378,12 +348,6 @@ class Decomposer:
             groups.pop(largest_group[0])
             new_groups.update({largest_group[0]: (largest_group[1][0], largest_group[1][1])})
         return new_groups
-
-    def get_comments_attached_to_line(self) -> dict[str, str]:
-        return self.__comment_handling.get_comments_attached_to_line()
-
-    def attach_comments_to_nodes(self) -> None:
-        self.__comment_handling.attach_comments_to_nodes(self.__tree)
 
     def get_file(self) -> str:
         return self.__full_file
