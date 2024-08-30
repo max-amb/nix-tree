@@ -27,6 +27,10 @@ OPTIONS_LOCATION: str = "../data/options.json"
 class QueueScreen(ModalScreen[bool]):
     """The screen where the user can choose to apply their changes to the file or not"""
 
+    BINDINGS = [
+        ("escape", "quit_pressed")
+    ]
+
     def __init__(self, queue: list) -> None:
         """Redefining the init function to take in a queue list for displaying in the ListView
 
@@ -46,12 +50,13 @@ class QueueScreen(ModalScreen[bool]):
             ComposeResult - the screen in a form the library understands
         """
 
-        with Vertical():
+        with Vertical(id="apply_queue"):
             with Center():
                 yield ListView(*self.__queue_as_list, id="operations_list_queue")
-                with Horizontal():
-                    yield Button("Apply", id="apply", variant="success")
-                    yield Button("Don't apply", id="do_not_apply", variant="error")
+                with Center():
+                    with Horizontal(id="buttons"):
+                        yield Button("Apply", id="apply", variant="success")
+                        yield Button("Don't apply", id="do_not_apply", variant="error")
 
     def on_button_pressed(self, button: Button.Pressed) -> None:
         """Called when the user chooses one of the buttons, the function removes its screen returning true if the
@@ -66,9 +71,18 @@ class QueueScreen(ModalScreen[bool]):
         else:
             self.dismiss(False)
 
+    def action_quit_pressed(self) -> None:
+        """Quits the screen when the esc is pressed"""
+
+        self.dismiss(False)
+
 
 class HomeManagerGenerationScreen(ModalScreen[list[str]]):
     """The screen brought up if the user chooses to select a home-manager generation"""
+
+    BINDINGS = [
+        ("escape", "quit_pressed")
+    ]
 
     def __init__(self, title: str):
         """Redefining the init function to take in the home-manager generation as an argument
@@ -100,13 +114,18 @@ class HomeManagerGenerationScreen(ModalScreen[list[str]]):
             ComposeResult - the screen in a form the library understands
         """
 
-        with Vertical(classes="modifytext"):
-            with Horizontal():
+        with Vertical(id="generation_options"):
+            with Horizontal(id="generation_text"):
                 yield Label(f"Date built: {self.__title.split()[0]}   ")
                 yield Label(f"Id: {self.__title.split()[4]}")
-            with Horizontal():
+            with Horizontal(id="buttons"):
                 yield Button(label="Activate", variant="success", id="activate")
                 yield Button(label="Remove", variant="error", id="remove")
+
+    def action_quit_pressed(self) -> None:
+        """Quits the screen when the esc is pressed"""
+
+        self.app.pop_screen()
 
 
 class UI(App[list[str]]):
@@ -273,49 +292,59 @@ class UI(App[list[str]]):
         tree: DecomposerTree = self.__decomposer.get_tree()
         while self.__queue.get_len() > 0:
             action = self.__queue.dequeue().name
-            if "[" in action:
-                path = action.split("=")[0].split(" ")[1]
-                variable: str = action[action.index("["):action.index("]") + 1]
-                full_path = path + "=" + variable
-            elif "'" in action:
-                path = action.split("=")[0].split(" ")[1]
-                variable: str = "'" + action.split("'")[1] + "'"
-                full_path = path + "=" + variable
-            else:
-                full_path = action.split(" ")[1]
-                path = full_path.split("=")[0]
-            match action.split(" ")[0]:
-                case "Added":
-                    tree.add_branch(full_path)
-                case "Delete":
-                    parent: Node = tree.find_node_parent(full_path, tree.get_root())
-                    if isinstance(parent, ConnectorNode):
-                        parent.remove_child_variable_node(full_path)
-                    else:
-                        raise CrazyError
-                case "Change":
-                    change_command: str = action[7:]
-                    pre: str = change_command.split("->")[0].strip()
-                    post: str = change_command.split("->")[1].strip()
-                    node_to_edit: Node = tree.find_variable_node(pre, tree.get_root())
-                    if isinstance(node_to_edit, VariableNode):
-                        node_to_edit.set_data(post.split("=")[1])
-                    else:
-                        raise CrazyError(node_to_edit.get_name())
-                case "Section":
-                    match action.split(" ")[-1]:
-                        case "deleted":
-                            parent: Node = tree.find_section_node_parent(action.split(" ")[1], tree.get_root())
+            if action:
+                if "[" in action:
+                    path = action.split("=")[0].split(" ")[1]
+                    variable: str = action[action.index("["):action.index("]") + 1]
+                    full_path = path + "=" + variable
+                elif "'" in action:
+                    path = action.split("=")[0].split(" ")[1]
+                    variable: str = "'" + action.split("'")[1] + "'"
+                    full_path = path + "=" + variable
+                else:
+                    full_path = action.split(" ")[1]
+                    path = full_path.split("=")[0]
+                match action.split(" ")[0]:
+                    case "Added":
+                        tree.add_branch(full_path)
+                    case "Delete":
+                        parent: Node | None = tree.find_node_parent(full_path, tree.get_root())
+                        if parent:
                             if isinstance(parent, ConnectorNode):
-                                parent.remove_child_section_node(action.split(" ")[1].split(".")[-1])
+                                parent.remove_child_variable_node(full_path)
                             else:
-                                raise CrazyError
-                        case "added":
-                            parent: Node = tree.find_section_node_parent(action.split(" ")[1], tree.get_root())
-                            if isinstance(parent, ConnectorNode):
-                                parent.add_node(ConnectorNode(action.split(" ")[1].split(".")[-1]))
-                            else:
-                                raise CrazyError
+                                raise NodeNotFound(node_name=full_path)
+                        else:
+                            raise NodeNotFound(node_name=full_path)
+                    case "Change":
+                        change_command: str = action[7:]
+                        pre: str = change_command.split("->")[0].strip()
+                        post: str = change_command.split("->")[1].strip()
+                        node_to_edit: Node = tree.find_variable_node(pre, tree.get_root())
+                        if isinstance(node_to_edit, VariableNode):
+                            node_to_edit.set_data(post.split("=")[1])
+                        else:
+                            raise CrazyError(node_to_edit.get_name())
+                    case "Section":
+                        match action.split(" ")[-1]:
+                            case "deleted":
+                                parent: Node | None = tree.find_section_node_parent(action.split(" ")[1], tree.get_root())
+                                if parent:
+                                    if isinstance(parent, ConnectorNode):
+                                        parent.remove_child_section_node(action.split(" ")[1].split(".")[-1])
+                                    else:
+                                        raise NodeNotFound(node_name=action.split(" ")[1])
+                                else:
+                                    raise NodeNotFound(node_name=action.split(" ")[1])
+                            case "added":
+                                parent: Node | None = tree.find_section_node_parent(action.split(" ")[1], tree.get_root())
+                                if parent:
+                                    if isinstance(parent, ConnectorNode):
+                                        parent.add_node(ConnectorNode(action.split(" ")[1].split(".")[-1]))
+                                    else:
+                                        raise NodeNotFound(node_name=action.split(" ")[1])
+                                else:
+                                    raise NodeNotFound(node_name=action.split(" ")[1])
 
     def action_apply(self) -> None:
         """Called if "a" is pressed, it pushes the apply screen which allows the user to push their changes to the
@@ -533,7 +562,7 @@ class UI(App[list[str]]):
                         generation_command = subprocess.run("home-manager generations".split(), capture_output=True,
                                                             text=True, check=True)
                         yield OptionList(*generation_command.stdout.split("\n")[:-1], id="home-manager-gens")
-                        with Horizontal():
+                        with Horizontal(id="buttons"):
                             yield Button(label="switch", variant="success", id="switch_hm")
                             yield Button(label="build", id="build_hm")
             with TabPane(title="operations stack", id="operations_stack_tab"):

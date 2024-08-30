@@ -114,9 +114,6 @@ class Decomposer:
             file_path: Path - The file path for the Nix configuration file
             tree: DecomposerTree - The tree that decomposer should add to
 
-        Returns:
-            None
-
         Raises:
             FileNotFoundError: If the file does not exist or is a directory and thus is unreadable
         """
@@ -133,10 +130,8 @@ class Decomposer:
     def get_tree(self) -> DecomposerTree:
         """Get the current tree maintained by the decomposer
 
-        Args:
-
         Returns:
-            None
+            DecomposerTree - the tree
         """
         return self.__tree
 
@@ -184,6 +179,15 @@ class Decomposer:
         self.__tree.add_branch(contents=f"headers=[ {', '.join(headers)} ]")
 
     def __prepare_the_file(self, file: str) -> list[str]:
+        """Fixes issues with strings being split on spaces and splits the file
+
+        Args:
+            file: str - the file as a string
+
+        Returns:
+            list[str] - the file split on spaces
+        """
+
         rest_of_file_split: list = file.split(" ")
         for i, _ in enumerate(rest_of_file_split):
             try:
@@ -373,6 +377,15 @@ class Decomposer:
         return new_groups
 
     def __find_equal_locations_lines(self, equals_locations: list) -> list:
+        """Goes through the equals locations list and finds their lines
+
+        Args:
+            equals_locations: list - the equals locations list without line numbers
+
+        Returns:
+            list - the equals locations list with line numbers
+        """
+
         lines: list[str] = self.__file_path.open(mode='r').readlines()
 
         # Cleaning
@@ -390,6 +403,14 @@ class Decomposer:
         return equals_locations
 
     def __add_comments_to_nodes(self, node: Node, prepend: str, comments: dict[str, str]):
+        """Adds the comment lists to their respective nodes
+
+        Args:
+            node: Node - the current node we are checking
+            prepend: str - the group we are in
+            comments: dict[str, str] - the compressed comments dict
+        """
+
         prepend += "."+node.get_name().split("=")[0]
         try:
             if isinstance(node, VariableNode):

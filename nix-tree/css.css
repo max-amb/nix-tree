@@ -34,6 +34,10 @@ HomeManagerGenerationScreen {
     align: center middle;
 }
 
+QueueScreen {
+    align: center middle;
+}
+
 AddScreenStringUnique {
     align: center middle;
     width: 50;
@@ -66,6 +70,33 @@ AddScreenStringUnique {
     padding: 1 1;
     width: 65;
     height: 13;
+    align: center middle;
+    content-align: center middle;
+}
+
+#apply_queue {
+    border: panel darkseagreen;
+    width: 70;
+    height: 18;
+    align: center middle;
+    content-align: center middle;
+}
+
+#operations_list_queue {
+    height: 7;
+    padding: 0 0;
+    margin: 0 0;
+}
+
+#generation_options {
+    border: panel dodgerblue;
+    width: 45;
+    height: 7;
+    align: center middle;
+    content-align: center middle;
+}
+
+#generation_text {
     align: center middle;
     content-align: center middle;
 }
