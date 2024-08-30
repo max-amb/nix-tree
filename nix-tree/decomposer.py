@@ -66,6 +66,8 @@ class CommentHandling:
         return new_file
 
     def __compressing_comments(self) -> None:
+        """Compresses the lines with comments dictionary to get multiline comments into lists"""
+
         current_addition: list[tuple[str, bool]] = []
         for line_with_comment_itr in range(len(self.__lines_with_comments)):
 
@@ -94,6 +96,12 @@ class CommentHandling:
                 current_addition = []
 
     def get_comments_for_attaching(self) -> dict[int, list[tuple[str, bool]]]:
+        """Returns the cleaned up comments dict
+
+        Returns:
+            dict[int, list[tuple[str, bool]]] - the comments dict
+        """
+
         return self.__comments
 
 class Decomposer:
@@ -177,12 +185,12 @@ class Decomposer:
 
     def __prepare_the_file(self, file: str) -> list[str]:
         rest_of_file_split: list = file.split(" ")
-        for bit in range(len(rest_of_file_split)):
+        for i, _ in enumerate(rest_of_file_split):
             try:
                 if re.search(r"^'\S*\s*[^']$", rest_of_file_split[
-                    bit]):  # Fixes issue with strings being split on spaces inside the string
-                    rest_of_file_split[bit] += " " + rest_of_file_split[bit + 1]
-                    del rest_of_file_split[bit + 1]
+                    i]):  # Fixes issue with strings being split on spaces inside the string
+                    rest_of_file_split[i] += " " + rest_of_file_split[i + 1]
+                    del rest_of_file_split[i + 1]
             except IndexError:
                 break  # Index errors are ok because we are deleting from the list
         return rest_of_file_split
@@ -291,10 +299,10 @@ class Decomposer:
         """
         locations: list = []
         char_location = 0
-        for phrase_itr in range(len(file)):
-            char_location += len(file[phrase_itr])
-            if file[phrase_itr] == "=":
-                locations.append((char_location, phrase_itr))
+        for i, phrase in enumerate(file):
+            char_location += len(phrase)
+            if phrase == "=":
+                locations.append((char_location, i))
         return locations
 
     def __cleaning_the_configuration(self, file: str) -> str:
@@ -332,11 +340,11 @@ class Decomposer:
         stack = GroupsStack()
         character_iterator = 0
         split_file: list = file.split(" ")
-        for phrase_itr in range(len(split_file)):
-            character_iterator += len(split_file[phrase_itr])
-            if split_file[phrase_itr] == "{":
-                stack.push((split_file[phrase_itr - 2], (character_iterator, 0)))
-            if split_file[phrase_itr] == "};":
+        for i, phrase in enumerate(split_file):
+            character_iterator += len(phrase)
+            if phrase == "{":
+                stack.push((split_file[i - 2], (character_iterator, 0)))
+            if phrase == "};":
                 entry = stack.pop()
                 starting_point = entry[1][0]
                 new_entry_one = (starting_point, character_iterator)
@@ -368,20 +376,20 @@ class Decomposer:
         lines: list[str] = self.__file_path.open(mode='r').readlines()
 
         # Cleaning
-        for line in range(len(lines)):
-            lines[line] = lines[line].strip()
-            if "#" in lines[line]:
-                lines[line] = lines[line].split("#")[0].strip()
+        for i, line in enumerate(lines):
+            lines[i] = lines[i].strip()
+            if "#" in line:
+                lines[i] = lines[i].split("#")[0].strip()
 
         equals_num = 0
-        for line in range(len(lines)):
-            number_of_equals = lines[line].count("=")
-            for equals in range(number_of_equals):
-                equals_locations[equals_num] = (equals_locations[equals_num][0], equals_locations[equals_num][1], line)
+        for i, line in enumerate(lines):
+            number_of_equals = line.count("=")
+            for _ in range(number_of_equals):
+                equals_locations[equals_num] = (equals_locations[equals_num][0], equals_locations[equals_num][1], i)
                 equals_num += 1
         return equals_locations
 
-    def __add_comments_to_nodes(self, node: Node, prepend: str, comments: dict[str: str]):
+    def __add_comments_to_nodes(self, node: Node, prepend: str, comments: dict[str, str]):
         prepend += "."+node.get_name().split("=")[0]
         try:
             if isinstance(node, VariableNode):

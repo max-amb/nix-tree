@@ -1,3 +1,5 @@
+"""Contains the variable screens, such as modifying a variable or deleting it"""
+
 import re
 
 from textual.app import ComposeResult
@@ -177,4 +179,3 @@ class OptionsScreen(ModalScreen[str]):
         """Brings up the options help screen"""
 
         self.app.push_screen(OptionsHelpScreen())
-

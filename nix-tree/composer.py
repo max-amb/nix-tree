@@ -1,4 +1,4 @@
-"""Composer"""
+"""contains the composer which builds the file"""
 
 import re
 
@@ -16,17 +16,33 @@ class ComposerIterator:
     previous_addition: str = ""
 
 class Composer:
+    """The class which contains the functionality to output the edited tree"""
+
     def __init__(self, decomposer: Decomposer, file_location: str, write_over: bool, comments: bool):
-        self.__decomposer: Decomposer = decomposer
+        """Defines the init function to take in all of the required variables
+
+        Args:
+            decomposer: Decomposer - the decomposer object to get the tree
+            file_location: str - the location of the file to write to
+            write_over: bool - whether to write over the file or append .new to the file name
+            comments: bool - whether to include comments from the original file
+        """
+
         self.__tree: DecomposerTree = decomposer.get_tree()
         if write_over:
             self.__file_location = file_location
         else:
             self.__file_location = file_location + ".new"
         self.__composer_iterator = ComposerIterator()
-        self.write_to_file(comments)
+        self.__write_to_file(comments)
 
-    def write_to_file(self, comments: bool):
+    def __write_to_file(self, comments: bool):
+        """Performs the writing by calling the appropriate functions and writing to the file
+
+        Args:
+            comments: bool - whether comments should be included from the original file
+        """
+
         self.__separate_and_add_headers()
         if comments:
             self.__work_out_lines_comments(self.__tree.get_root())
@@ -36,6 +52,12 @@ class Composer:
             file.write(self.__composer_iterator.lines + "}\n")
 
     def __work_out_lines_comments(self, node: Node) -> None:
+        """Writes to the file if comments are to be attached
+
+        Args:
+            node: Node - the starting node
+        """
+
         comment_for_after = ""
         if node.get_comments():
             for comment in node.get_comments():
@@ -147,6 +169,11 @@ class Composer:
                 self.__composer_iterator.previous_addition += "\n"
 
     def __work_out_lines_no_comments(self, node: Node) -> None:
+        """Writes to the file if comments are not to be attached
+
+        Args:
+            node: Node - the starting node
+        """
         if isinstance(node, ConnectorNode):
             if len(node.get_connected_nodes()) > 1:
                 if self.__composer_iterator.lines[-1] != ":":
@@ -228,6 +255,12 @@ class Composer:
                 raise CrazyError
 
     def __separate_and_add_headers(self) -> None:
+        """Seperates the headers from the tree and adds them to the file
+
+        Note:
+            This is required due to the unique syntax of headers in a Nix file
+        """
+
         headers_node = None
         for singular_node in self.__tree.get_root().get_connected_nodes():
             if singular_node.get_name() == "headers":

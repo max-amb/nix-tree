@@ -4,7 +4,7 @@ from textual.app import ComposeResult
 from textual.screen import ModalScreen
 from textual.widgets import Markdown
 
-"""The help text for the main menu"""
+# The help text for the main menu
 MAINHELPTEXT = """\
 #  *Help*
 
@@ -17,7 +17,7 @@ Lists have spaces placed at the front of them to avoid formatting issues,
 they will not be present in the final file.
 """
 
-"""The help text for the options menu"""
+# The help text for the options menu
 OPTIONSHELPTEXT = """\
 # *Options help*
 
@@ -29,7 +29,7 @@ OPTIONSHELPTEXT = """\
 - Exit: To close the options dialog
 """
 
-"""The help text for the section options menu"""
+# The help text for the section options menu
 SECTIONOPTIONSHELPTEXT = """\
 # *Section options help*
 
@@ -44,7 +44,7 @@ SECTIONOPTIONSHELPTEXT = """\
 class HelpScreen(ModalScreen):
     """The outline for a help screen in the app"""
 
-    """Defines the key presses that perform actions in the window"""
+    # Defines the key presses that perform actions in the window
     BINDINGS = [
         ("q", "quit_pressed"),
         ("escape", "quit_pressed"),
@@ -80,4 +80,3 @@ class SectionOptionsHelpScreen(HelpScreen):
     def compose(self) -> ComposeResult:
         """Displays the markdown in SECTIONOPTIONSHELPTEXT"""
         yield Markdown(SECTIONOPTIONSHELPTEXT, id="sectionoptionshelptext")
-

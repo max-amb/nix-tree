@@ -31,8 +31,8 @@ class CrazyError(Exception):
 
 
 class NoValidHeadersNode(Exception):
-    pass
+    """Raised if no valid headers are found by the composer"""
 
 
 class ConfigurationFileNotFound(Exception):
-    pass
+    """Raised if no configuration file is found to edit/read"""

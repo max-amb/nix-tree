@@ -13,7 +13,7 @@ from textual.widgets import Label, ListView, ListItem, OptionList, Tree, Header,
 from composer import Composer
 from custom_types import UIVariableNode, UIConnectorNode
 from decomposer import DecomposerTree, Decomposer
-from errors import CrazyError
+from errors import CrazyError, NodeNotFound
 from help_screens import MainHelpScreen
 from parsing import ParsingOptions, Types
 from stacks import OperationsStack, OperationsQueue
@@ -71,10 +71,22 @@ class HomeManagerGenerationScreen(ModalScreen[list[str]]):
     """The screen brought up if the user chooses to select a home-manager generation"""
 
     def __init__(self, title: str):
+        """Redefining the init function to take in the home-manager generation as an argument
+
+        Args:
+            title: str - the home manager generation
+        """
+
         self.__title = title
         super().__init__()
 
     def on_button_pressed(self, choice: Button.Pressed):
+        """Called when one of the buttons are pressed completing what the user has selected
+
+        Args:
+            choice: Button.Pressed - contains which button was pressed
+        """
+
         match choice.button.id:
             case "activate":
                 self.dismiss(f"{self.__title.split()[-1]}/activate".split())
@@ -82,6 +94,12 @@ class HomeManagerGenerationScreen(ModalScreen[list[str]]):
                 self.dismiss(f"home-manager remove-generations {self.__title.split()[4]}".split())
 
     def compose(self) -> ComposeResult:
+        """Defines what the home-manager screen will look like
+
+        Returns:
+            ComposeResult - the screen in a form the library understands
+        """
+
         with Vertical(classes="modifytext"):
             with Horizontal():
                 yield Label(f"Date built: {self.__title.split()[0]}   ")
@@ -94,8 +112,7 @@ class HomeManagerGenerationScreen(ModalScreen[list[str]]):
 class UI(App[list[str]]):
     """Defines the main screen of the app"""
 
-    """The path to the css"""
-    CSS_PATH = "css.css"
+    CSS_PATH = "css.css"  # The path to the CSS to decorate the UI
 
     BINDINGS = [
         ("q", "quit", "To quit the app"),
@@ -183,24 +200,33 @@ class UI(App[list[str]]):
                             raise TypeError("Cannot deduce node variable type")
                     case "Added":
                         variable = full_path.split("=")[1]
-                        node_to_delete: UIVariableNode = self.recursive_searching_for_var(
+                        node_to_delete: UIVariableNode | None = self.recursive_searching_for_var(
                             self.query_one(Tree).root,
                             path.split("."),
                             variable
                         )
-                        node_to_delete.remove()
+                        if node_to_delete:
+                            node_to_delete.remove()
+                        else:
+                            raise NodeNotFound(node_name=full_path)
                     case "Change":
                         change_command: str = action[7:]  # Can't use space splits as it changes the lists spaces
                         pre: list = change_command.split("->")[0].strip().split("=")
                         post: list = change_command.split("->")[1].strip().split("=")
-                        variable_to_change: UIVariableNode = self.recursive_searching_for_var(
+                        variable_to_change: UIVariableNode | None = self.recursive_searching_for_var(
                             self.query_one(Tree).root,
                             post[0].split("."),
                             post[1]
                         )
-                        new_label = f"{pre[0].split('.')[-1]}={pre[1]}"
-                        variable_to_change.label = new_label
-                        variable_to_change.data[post[0]] = pre[1]
+                        if variable_to_change:
+                            new_label = f"{pre[0].split('.')[-1]}={pre[1]}"
+                            variable_to_change.label = new_label
+                            if variable_to_change.data:
+                                variable_to_change.data[post[0]] = pre[1]
+                            else:
+                                raise NodeNotFound(node_name='='.join(post))
+                        else:
+                            raise NodeNotFound(node_name='='.join(post))
                     case "Section":
                         match action.split(" ")[-1]:
                             case "deleted":
@@ -209,18 +235,24 @@ class UI(App[list[str]]):
                                     path_before_section = path_as_list[:-1]
                                 else:
                                     path_before_section = path_as_list
-                                section_node: UIConnectorNode = self.recursive_searching_for_connector(
+                                section_node: UIConnectorNode | None = self.recursive_searching_for_connector(
                                     self.query_one(Tree).root,
                                     path_before_section
                                 )
-                                section_node.add(path_as_list[-1], after=0)
+                                if section_node:
+                                    section_node.add(path_as_list[-1], after=0)
+                                else:
+                                    raise NodeNotFound(node_name='.'.join(path_as_list))
                             case "added":
                                 path_as_list = action.split(" ")[1].split(".")
-                                section_node: UIConnectorNode = self.recursive_searching_for_connector(
+                                section_node: UIConnectorNode | None = self.recursive_searching_for_connector(
                                     self.query_one(Tree).root,
                                     path_as_list
                                 )
-                                section_node.remove()
+                                if section_node:
+                                    section_node.remove()
+                                else:
+                                    raise NodeNotFound(node_name='.'.join(path_as_list))
         else:
             self.notify("The operations stack is empty")
 
@@ -334,6 +366,7 @@ class UI(App[list[str]]):
             have hence we can make it slightly simpler - also we do not need to make any sections/groups, so it doesn't
             need that functionality.
         """
+
         if len(path) > 1:
             path_bit_already_exists = False
             for child in node.children:
@@ -427,10 +460,22 @@ class UI(App[list[str]]):
             self.app.push_screen(OptionsScreen(node), save_change_to_stack)
 
     def on_option_list_option_selected(self, choice: OptionList.OptionSelected) -> None:
+        """Opened if the user chooses an option - usually in generation management
+
+        Args:
+            choice: OptionList.OptionSelected - the option the user chose
+        """
+
         def handle_home_manager_choice(cmd: list[str] | None):
+            """If the user chose to do something with home-manager, this gets called
+
+            Args:
+                cmd: list[str] | None - the users choice (None if they chose nothing)
+            """
+
             self.app.exit(cmd)
 
-        if choice.option_list.id == "system-switch-options" or choice.option_list.id == "home-manager-gens":
+        if choice.option_list.id in ("system-switch-options", "home-manager-gens"):
             match choice.option.prompt:
                 case "switch":
                     self.app.exit("sudo nixos-rebuild switch".split())
@@ -443,9 +488,15 @@ class UI(App[list[str]]):
                 case "build-vm":
                     self.app.exit("sudo nixos-rebuild build-vm".split())
                 case _:  # Home-manager
-                    self.app.push_screen(HomeManagerGenerationScreen(choice.option.prompt), handle_home_manager_choice)
+                    self.app.push_screen(HomeManagerGenerationScreen(str(choice.option.prompt)), handle_home_manager_choice)
 
     def on_button_pressed(self, choice: Button.Pressed):
+        """Called if a button is pressed - only really in generation management
+
+        Args:
+            choice: Button.Pressed - the users choice
+        """
+
         match choice.button.id:
             case "switch_hm":
                 self.app.exit("home-manager switch".split())
@@ -458,6 +509,7 @@ class UI(App[list[str]]):
         Returns:
             ComposeResult - the screen in a form the library understands
         """
+
         tree: Tree[dict] = Tree(self.__file_name)
         tree.root.expand()
         self.__decomposer.get_tree().add_to_ui(self.__decomposer.get_tree().get_root(), tree.root)
@@ -479,7 +531,7 @@ class UI(App[list[str]]):
                         )
                     with TabPane(title="Home Manager"):
                         generation_command = subprocess.run("home-manager generations".split(), capture_output=True,
-                                                            text=True)
+                                                            text=True, check=True)
                         yield OptionList(*generation_command.stdout.split("\n")[:-1], id="home-manager-gens")
                         with Horizontal():
                             yield Button(label="switch", variant="success", id="switch_hm")

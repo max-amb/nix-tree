@@ -1,3 +1,5 @@
+"""All of the section management screens, such as adding a var or section or deleting a section"""
+
 import re
 
 from textual.app import ComposeResult
@@ -56,7 +58,6 @@ class AddScreenBoolean(ModalScreen[str]):
         """
 
         self.dismiss(selected.pressed.label.plain)
-        return
 
 
 class AddScreenStringUniqueList(ModalScreen[str]):
@@ -80,7 +81,6 @@ class AddScreenStringUniqueList(ModalScreen[str]):
         """
 
         self.dismiss(user_input.value.replace("[", "[ "))
-        return
 
 
 class AddScreenGroup(ModalScreen[list]):
@@ -122,7 +122,6 @@ class AddScreenGroup(ModalScreen[list]):
         else:
             full_path = '.'.join(work_out_full_path(self.__node.node, []))
             self.dismiss([f"Section {full_path}.{user_input.value} added"])
-        return
 
 
 class AddScreenInteger(ModalScreen[str]):
@@ -149,7 +148,6 @@ class AddScreenInteger(ModalScreen[str]):
         """
 
         self.dismiss(str(user_input.value))
-        return
 
 
 class AddScreenVariableSelection(ModalScreen[tuple[str, Types]]):
@@ -296,7 +294,6 @@ class AddScreenPath(ModalScreen[list]):
                                              handle_return_from_variable_addition)
                     else:
                         self.app.push_screen(AddScreenVariableSelection(), handle_return_from_variable_addition)
-                    pass
                 elif data[1] == Types.STRING and (not re.search(r"\A'.+'\Z", data[0])):
                     self.notify("You lost a speech mark! Not updating")
                     if type_as_defined:
@@ -304,11 +301,13 @@ class AddScreenPath(ModalScreen[list]):
                                              handle_return_from_variable_addition)
                     else:
                         self.app.push_screen(AddScreenVariableSelection(), handle_return_from_variable_addition)
-                    pass
                 else:
                     path_as_list = work_out_full_path(self.__node.node, [])
-                    node_added = self.recursive_addition(self.__node.node, path.value.split("."), data[0], path_as_list,
+                    if data[1]:
+                        node_added = self.recursive_addition(self.__node.node, path.value.split("."), data[0], path_as_list,
                                                          data[1])
+                    else:
+                        raise TypeError("The nodes type could not be determined")
                     if node_added:
                         if not path_as_list:  # If we are appending to root
                             self.__operations.append(f"Added {self.__path}={data[0]}")

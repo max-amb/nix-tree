@@ -1,7 +1,7 @@
 """Contains the tree implementation"""
 from custom_types import UIConnectorNode
 from parsing import Types
-from errors import CrazyError, NodeNotFound
+from errors import NodeNotFound
 
 
 def find_type(variable: str) -> Types:
@@ -69,10 +69,24 @@ class Node:
         return []
 
     def set_comments(self, comments: list[str]) -> None:
+        """To set the comments of the current node
+
+        Args:
+            comments: list[str] - the comments to store in the node
+        """
+
         self.__comments = comments
 
     def get_comments(self) -> list[str]:
-        return self.__comments
+        """To get the comments of the current node
+
+        Returns:
+            list[str] - the comments attached to the node
+        """
+
+        if self.__comments:
+            return self.__comments
+        return []
 
 class ConnectorNode(Node):
     """The connector node, it is a part of the path
@@ -111,6 +125,13 @@ class ConnectorNode(Node):
         return self.__children
 
     def remove_child_variable_node(self, full_path: str) -> None:
+        """Given a variable nodes full path, this method removes it from
+        the current nodes children
+
+        Args:
+            full_path: str - the full path of the node it is trying to remove
+        """
+
         for i, node in enumerate(self.__children):
             if isinstance(node, VariableNode):
                 if node.get_name() + "=" + node.get_data() == full_path:
@@ -119,6 +140,13 @@ class ConnectorNode(Node):
         raise NodeNotFound(full_path)
 
     def remove_child_section_node(self, name: str) -> None:
+        """Given a section nodes name, this method removes the section node from 
+        the current nodes children
+
+        Args:
+            name: str - the section nodes name
+        """
+
         for i, node in enumerate(self.__children):
             if isinstance(node, ConnectorNode):
                 if node.get_name() == name:
@@ -255,9 +283,17 @@ class DecomposerTree:
                     if path.split("=")[0] == i.get_name():
                         return i
             return node
-        raise CrazyError()
+        raise TypeError("Found an node which isn't a variable or a connector node")
 
-    def find_node_parent(self, path: str, node: Node, covered_path=None) -> Node:
+    def find_node_parent(self, path: str, node: Node, covered_path=None) -> Node | None:
+        """Finds the variable nodes parent
+
+        Args:
+            path: str - the full path of the node
+            node: Node - the current node we are searching
+            covered_path - how much of the path we have searched
+        """
+
         if covered_path is None:
             path = path.split("=")[0]
             covered_path = path.split(".")
@@ -270,7 +306,15 @@ class DecomposerTree:
         else:
             return node
 
-    def find_section_node_parent(self, path: str, node: Node, covered_path=None) -> Node:
+    def find_section_node_parent(self, path: str, node: Node, covered_path=None) -> Node | None:
+        """Finds a section nodes parent
+
+        Args:
+            path: str - the full path of the node
+            node: Node - the current node we are searching
+            covered_path - how much of the path we have searched
+        """
+
         if covered_path is None:
             covered_path = path.split(".")
         if len(covered_path) > 1:
