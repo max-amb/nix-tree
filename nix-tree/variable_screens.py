@@ -44,15 +44,15 @@ class ModifyScreen(ModalScreen[str]):
                     "false",
                 )
             elif self.__type == Types.INT:
-                yield Input(placeholder=self.__value, type="integer")
+                yield Input(value=self.__value, type="integer")
             elif self.__type == Types.LIST:
                 self.notify("Ensure you keep the square brackets and speech marks for string")
-                yield Input(placeholder=self.__value)
+                yield Input(value=self.__value)
             elif self.__type == Types.STRING:
                 self.notify("Ensure you keep the speech marks for a string")
-                yield Input(placeholder=self.__value, type="text")
+                yield Input(value=self.__value, type="text")
             else:
-                yield Input(placeholder=self.__value, type="text")
+                yield Input(value=self.__value, type="text")
 
     def on_input_submitted(self, new_data: Input.Submitted) -> None:
         """Takes the user input from the input widget and performs the modification while also creating the operations
@@ -75,11 +75,13 @@ class ModifyScreen(ModalScreen[str]):
                 self.notify("You lost a speech mark! Not updating")
                 self.app.pop_screen()
             else:
-                self.__node.node.label = self.__path.split(".")[-1] + "=" + new_data.value.replace("[", "[ ")
+                clean_input: str = re.sub(r"(\[)(\s*)", "[ ", new_data.value)
+                clean_input: str = re.sub(r"(\s*)(\])", " ]", clean_input)
+                self.__node.node.label = self.__path.split(".")[-1] + "=" + clean_input
                 if self.__node.node.data:
-                    self.__node.node.data[self.__path] = new_data.value.replace("[", "[ ")
-                self.dismiss(f"Change {self.__path}={self.__value.replace("[", "[ ")} -> "
-                             f"{self.__path}={new_data.value.replace("[", "[ ")}")
+                    self.__node.node.data[self.__path] = clean_input
+                self.dismiss(f"Change {self.__path}={self.__value} -> "
+                             f"{self.__path}={clean_input}")
         else:
             self.app.pop_screen()
 

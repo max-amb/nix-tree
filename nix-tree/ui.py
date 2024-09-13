@@ -21,7 +21,7 @@ from tree import VariableNode, ConnectorNode, Node
 from variable_screens import OptionsScreen
 from section_screens import SectionOptionsScreen
 
-OPTIONS_LOCATION: str = "../data/options.json"
+OPTIONS_LOCATION: str = "/home/max/nea/nix-tree/data/options.json"
 
 
 class QueueScreen(ModalScreen[bool]):
@@ -424,12 +424,12 @@ class UI(App[list[str]]):
 
         if len(path) > 1:
             for child in node.children:
-                if child.label == path[0]:
+                if str(child.label) == path[0]:
                     del path[0]
                     return self.recursive_searching_for_var(child, path, variable)
         elif len(path) == 1:
             for child in node.children:
-                if child.label == path[0] + "=" + variable:
+                if str(child.label) == path[0] + "=" + variable:
                     return child
 
     def recursive_searching_for_connector(self, node: UIConnectorNode, path: list) -> UIConnectorNode | None:
@@ -444,12 +444,12 @@ class UI(App[list[str]]):
         """
         if len(path) > 1:
             for child in node.children:
-                if child.label == path[0]:
+                if str(child.label) == path[0]:
                     del path[0]
                     return self.recursive_searching_for_connector(child, path)
         else:
             for child in node.children:
-                if child.label == path[0]:
+                if str(child.label) == path[0]:
                     return child
             return node.tree.root
 

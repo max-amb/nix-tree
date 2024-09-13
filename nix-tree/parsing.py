@@ -29,7 +29,7 @@ class ParsingOptions:
         """
 
         if (not file_path.exists()) or (file_path.is_dir()):
-            raise FileNotFoundError("The configuration file does not exist")
+            raise FileNotFoundError("The options file does not exist")
         self.__options = json.loads(file_path.read_text())
 
     def check_type(self, option_path: str) -> tuple[Types, str] | None:

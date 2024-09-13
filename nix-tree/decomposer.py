@@ -1,4 +1,5 @@
 """The module containing the decomposer"""
+from dataclasses import dataclass
 from pathlib import Path
 import re
 
@@ -6,6 +7,7 @@ from stacks import GroupsStack
 from tree import DecomposerTree, Node, VariableNode
 
 
+@dataclass
 class Iterator:
     """The iterator object to traverse the file - different to the prototype"""
     equals_number: int = 0

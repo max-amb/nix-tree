@@ -28,7 +28,7 @@ def work_out_full_path(current_node: UIConnectorNode, path: list) -> list:
     """
 
     if not current_node.is_root:
-        path.insert(0, current_node.label.plain)
+        path.insert(0, str(current_node.label))
         if current_node.parent:  # Every node will have a parent but the root node - this is just for pylint
             path = work_out_full_path(current_node.parent, path)
     return path
@@ -80,7 +80,9 @@ class AddScreenStringUniqueList(ModalScreen[str]):
             user_input: Input.Submitted - the choice of the user
         """
 
-        self.dismiss(user_input.value.replace("[", "[ "))
+        clean_input: str = re.sub(r"(\[)(\s*)", "[ ", user_input.value)
+        clean_input: str = re.sub(r"(\s*)(\])", " ]", clean_input)
+        self.dismiss(clean_input)
 
 
 class AddScreenGroup(ModalScreen[list]):

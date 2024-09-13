@@ -1,12 +1,14 @@
 """contains the composer which builds the file"""
 
 import re
+from dataclasses import dataclass
 
 from errors import NoValidHeadersNode, CrazyError
 from decomposer import Decomposer, DecomposerTree
 from tree import VariableNode, ConnectorNode, Node
 from parsing import Types
 
+@dataclass
 class ComposerIterator:
     """An iterator that composer uses to build the file"""
 
