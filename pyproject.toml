@@ -1,5 +1,5 @@
 [tool.poetry]
-name = "nix_tree"
+name = "nix-tree"
 version = "0.1.0"
 description = "A tool for viewing and editing your nix configuration as a tree"
 authors = ["Max Ambaum <max_a@e.email>"]
@@ -17,4 +17,4 @@ requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"
 
 [tool.poetry.scripts]
-nix_tree = 'nix_tree.__main__:main'
+nix-tree = 'nix_tree.__main__:main'
