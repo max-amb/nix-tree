@@ -7,8 +7,8 @@ from textual.containers import Horizontal, Vertical, Center
 from textual.screen import ModalScreen
 from textual.widgets import Input, Label, Tree, Button, RadioSet
 
-from help_screens import OptionsHelpScreen
-from parsing import Types
+from nix_tree.help_screens import OptionsHelpScreen
+from nix_tree.parsing import Types
 
 
 class ModifyScreen(ModalScreen[str]):

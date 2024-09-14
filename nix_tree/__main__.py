@@ -3,8 +3,8 @@
 import argparse
 from pathlib import Path
 
-from ui import start_ui
-from errors import ConfigurationFileNotFound
+from nix_tree.ui import start_ui
+from nix_tree.errors import ConfigurationFileNotFound
 
 def main():
     """Parses the arguments to the tool and passes it on to the rest of the code"""

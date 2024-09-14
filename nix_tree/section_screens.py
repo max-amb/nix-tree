@@ -7,9 +7,9 @@ from textual.containers import Horizontal, Vertical, Center
 from textual.screen import ModalScreen
 from textual.widgets import Input, Label, OptionList, Tree, Button, RadioSet
 
-from custom_types import UIConnectorNode
-from help_screens import SectionOptionsHelpScreen
-from parsing import ParsingOptions, Types
+from nix_tree.custom_types import UIConnectorNode
+from nix_tree.help_screens import SectionOptionsHelpScreen
+from nix_tree.parsing import ParsingOptions, Types
 
 
 def work_out_full_path(current_node: UIConnectorNode, path: list) -> list:

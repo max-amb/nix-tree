@@ -1,7 +1,8 @@
 """Contains the tree implementation"""
-from custom_types import UIConnectorNode
-from parsing import Types
-from errors import NodeNotFound
+
+from nix_tree.custom_types import UIConnectorNode
+from nix_tree.parsing import Types
+from nix_tree.errors import NodeNotFound
 
 
 def find_type(variable: str) -> Types:

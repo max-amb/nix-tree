@@ -3,8 +3,8 @@ from dataclasses import dataclass
 from pathlib import Path
 import re
 
-from stacks import GroupsStack
-from tree import DecomposerTree, Node, VariableNode
+from nix_tree.stacks import GroupsStack
+from nix_tree.tree import DecomposerTree, Node, VariableNode
 
 
 @dataclass

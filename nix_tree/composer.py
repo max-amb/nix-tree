@@ -3,10 +3,10 @@
 import re
 from dataclasses import dataclass
 
-from errors import NoValidHeadersNode, CrazyError
-from decomposer import Decomposer, DecomposerTree
-from tree import VariableNode, ConnectorNode, Node
-from parsing import Types
+from nix_tree.errors import NoValidHeadersNode, CrazyError
+from nix_tree.decomposer import Decomposer, DecomposerTree
+from nix_tree.tree import VariableNode, ConnectorNode, Node
+from nix_tree.parsing import Types
 
 @dataclass
 class ComposerIterator:

@@ -10,18 +10,18 @@ from textual.screen import ModalScreen
 from textual.widgets import Label, ListView, ListItem, OptionList, Tree, Header, Footer, TabbedContent, \
     TabPane, Button
 
-from composer import Composer
-from custom_types import UIVariableNode, UIConnectorNode
-from decomposer import DecomposerTree, Decomposer
-from errors import CrazyError, NodeNotFound
-from help_screens import MainHelpScreen
-from parsing import ParsingOptions, Types
-from stacks import OperationsStack, OperationsQueue
-from tree import VariableNode, ConnectorNode, Node
-from variable_screens import OptionsScreen
-from section_screens import SectionOptionsScreen
+from nix_tree.composer import Composer
+from nix_tree.custom_types import UIVariableNode, UIConnectorNode
+from nix_tree.decomposer import DecomposerTree, Decomposer
+from nix_tree.errors import CrazyError, NodeNotFound
+from nix_tree.help_screens import MainHelpScreen
+from nix_tree.parsing import ParsingOptions, Types
+from nix_tree.stacks import OperationsStack, OperationsQueue
+from nix_tree.tree import VariableNode, ConnectorNode, Node
+from nix_tree.variable_screens import OptionsScreen
+from nix_tree.section_screens import SectionOptionsScreen
 
-OPTIONS_LOCATION: str = "/home/max/nea/nix-tree/data/options.json"
+OPTIONS_LOCATION: str = "/home/max/nea/nix_tree/data/options.json"
 
 
 class QueueScreen(ModalScreen[bool]):
