@@ -1,5 +1,5 @@
 # Nix-tree
-A tool for viewing and editing your nix configuration as a tree
+This is an optionated tool for viewing and editing your nix configuration as a tree
 
 ## RUN 🏃
 * Note this tool currently is only tested for NixOS, so if you aren't on NixOS use it at your peril!
@@ -28,6 +28,30 @@ nix run 'github:max-amb/nix-tree' <your filename>
     * `-w` which will enable writing over of the original file
     * `-c` which will enable comments being copied over
 
+## Screenshots 📸
+* The main screen displaying the tree:
+![Tree screen](./screenshots/main_screen.png)
+* The screen for generation management:
+![Generation management screen](./screenshots/generations_screen.png)
+* The screen you see when you select a variable:
+![Variable screen](./screenshots/variable_screen.png)
+* The screen you see when you select a section:
+![Section screen](./screenshots/section_screen.png)
+
+## FAQ ❓
+* Q: Is there a tutorial/guide on how to use the program?
+    * A: There is help screens on most of the screens which can be accessed by pressing ?
+* Q: How does it actually work?
+    * A: I have some diagrams in the works currently which will be added in replacement of this answer!
+* Q: Who is this aimed at?
+    * A: This program is mostly aimed at users who are new to nix and would benifit from some guardrails when creating a configuration,
+    however more experienced users still may find it useful for it's simplistic display of the configuration
+* Q: What does opinionated mean?
+    * A: It means that the program will group all of the related sections together, for example if `services.openssh` and `services.xserver`
+    were seperated in the original configuration, they will be both under `services` in the tree and in the outputted file
+* Q: Why is comments not on by default?
+    * A: The program doesn't copy over all of the comments to the new file, comments that are not obviously attached to a line of code are not
+    copied over. Hence, it is simpler to require the user to enable comment copying as it leads to less confusion.
 
 ## COMING UP⏭️
 - [ ] More safety rails for the user, e.g. more pattern matching in inputs
