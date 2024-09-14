@@ -1,5 +1,5 @@
 {
-  description = "Python application packaged using poetry2nix";
+  description = "A tool for viewing and editing your nix configuration as a tree";
 
   inputs.nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
   inputs.poetry2nix.url = "github:nix-community/poetry2nix";
@@ -8,18 +8,27 @@
     let
       system = "x86_64-linux";
       pkgs = nixpkgs.legacyPackages.${system}.extend poetry2nix.overlays.default;
-      myPythonApp = pkgs.poetry2nix.mkPoetryApplication { projectDir = self; };
+      lib = nixpkgs.lib;
       inherit (poetry2nix.lib.mkPoetry2Nix { inherit pkgs; }) mkPoetryApplication;
     in
     {
       defaultPackage.x86_64-linux = mkPoetryApplication {
+          type = "app";
           projectDir = ./.;
+
+          preInstall = ''
+            mkdir -p $out/data
+            cp ./data/options.json $out/data
+          '';
+
+          meta = {
+            description = "A tool for viewing and editing your nix configuration as a tree";
+            homepage = "https://github.com/max-amb/nix-tree";
+            license = lib.licenses.gpl3;
+            maintainers = with lib.maintainers; [ max-amb ];
+            platforms = lib.platforms.linux;
+          };
       };
 
-      apps.${system}.default = {
-        type = "app";
-        # replace <script> with the name in the [tool.poetry.scripts] section of your pyproject.toml
-        program = "${myPythonApp}/bin/nix-tree";
-      };
     };
 }

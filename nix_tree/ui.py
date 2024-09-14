@@ -21,9 +21,6 @@ from nix_tree.tree import VariableNode, ConnectorNode, Node
 from nix_tree.variable_screens import OptionsScreen
 from nix_tree.section_screens import SectionOptionsScreen
 
-OPTIONS_LOCATION: str = "/home/max/nea/nix_tree/data/options.json"
-
-
 class QueueScreen(ModalScreen[bool]):
     """The screen where the user can choose to apply their changes to the file or not"""
 
@@ -152,7 +149,18 @@ class UI(App[list[str]]):
 
         self.__stack = OperationsStack()
         self.__queue = OperationsQueue()
-        self.__options = ParsingOptions(Path(OPTIONS_LOCATION))
+
+        # This allows for the program to run without a constant options location
+        # It was an issue as it wouldn't allow the program to be installed without hardcoding
+        # the options location.
+        path_of_executable = Path(__file__).parts
+        options_location = Path()
+        for i in path_of_executable:
+            if i == "lib":
+                break
+            options_location = options_location / i
+        options_location = options_location / "data/options.json"
+        self.__options = ParsingOptions(options_location)
         self.__file_name = file_name
         self.__decomposer = decomposer
         super().__init__()
