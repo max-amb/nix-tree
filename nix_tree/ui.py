@@ -155,11 +155,20 @@ class UI(App[list[str]]):
         # the options location.
         path_of_executable = Path(__file__).parts
         options_location = Path()
-        for i in path_of_executable:
-            if i == "lib":
-                break
-            options_location = options_location / i
-        options_location = options_location / "data/options.json"
+        if 'store' in path_of_executable: # If it is being run as a flake
+            for i in path_of_executable:
+                if i == "lib":
+                    break
+                options_location = options_location / i
+            options_location = options_location / "data/options.json"
+        else: # If it is not being run as a flake
+            for i in path_of_executable:
+                if i == "nix_tree":
+                    options_location = options_location / i
+                    break
+                options_location = options_location / i
+            options_location = options_location / "data/options.json"
+
         self.__options = ParsingOptions(options_location)
         self.__file_name = file_name
         self.__decomposer = decomposer
