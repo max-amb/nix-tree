@@ -40,21 +40,25 @@ nix run 'github:max-amb/nix-tree' <your filename>
 
 ## FAQ ❓
 * Q: Is there a tutorial/guide on how to use the program?
-    * A: There is help screens on most of the screens which can be accessed by pressing ?
+    * A: There is help screens on most of the screens which can be accessed by pressing ?.
 * Q: How does it actually work?
     * A: I have some diagrams in the works currently which will be added in replacement of this answer!
 * Q: Who is this aimed at?
     * A: This program is mostly aimed at users who are new to nix and would benifit from some guardrails when creating a configuration,
-    however more experienced users still may find it useful for it's simplistic display of the configuration
+    however more experienced users still may find it useful for it's simplistic display of the configuration.
 * Q: What does opinionated mean?
     * A: It means that the program will group all of the related sections together, for example if `services.openssh` and `services.xserver`
-    were seperated in the original configuration, they will be both under `services` in the tree and in the outputted file
+    were seperated in the original configuration, they will be both under `services` in the tree and in the outputted file.
 * Q: Why is comments not on by default?
     * A: The program doesn't copy over all of the comments to the new file, comments that are not obviously attached to a line of code are not
     copied over. Hence, it is simpler to require the user to enable comment copying as it leads to less confusion.
 
-## COMING UP⏭️
+## To be implemented in the future⏭️
 - [ ] More safety rails for the user, e.g. more pattern matching in inputs
 - [ ] Complete support of the basic Nix language
 - [ ] The ability to analyse flakes (e.g.`in`statements)
 
+## Limitations
+This program obviously is not perfect, hence there are some limitations that should be taken into account by the user:
+* The program cannot currently parse the `let in` combination or any flake for that matter
+* It may not be able to handle multiline strings often found in `extraConfig` options
