@@ -1,8 +1,10 @@
 {
   description = "A tool for viewing and editing your nix configuration as a tree";
 
-  inputs.nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
-  inputs.poetry2nix.url = "github:nix-community/poetry2nix";
+  inputs = {
+    nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
+    poetry2nix.url = "github:nix-community/poetry2nix";
+  };
 
   outputs = { self, nixpkgs, poetry2nix }:
     let
@@ -16,6 +18,7 @@
           type = "app";
           projectDir = ./.;
 
+          # To copy over the full options json
           preInstall = ''
             mkdir -p $out/data
             cp ./data/options.json $out/data
