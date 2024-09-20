@@ -283,6 +283,7 @@ class DecomposerTree:
                 elif isinstance(i, VariableNode):
                     if path.split("=")[0] == i.get_name():
                         return i
+                raise TypeError("Found an node which isn't a variable or a connector node")
             return node
         raise TypeError("Found an node which isn't a variable or a connector node")
 
