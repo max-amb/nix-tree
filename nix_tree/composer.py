@@ -3,8 +3,8 @@
 import re
 from dataclasses import dataclass
 
-from nix_tree.errors import NoValidHeadersNode, CrazyError
-from nix_tree.decomposer import Decomposer, DecomposerTree
+from nix_tree.errors import NoValidHeadersNode, CrazyError, ErrorComposingFileFromTree
+from nix_tree.decomposer import DecomposerTree
 from nix_tree.tree import VariableNode, ConnectorNode, Node
 from nix_tree.parsing import Types
 
@@ -20,17 +20,17 @@ class ComposerIterator:
 class Composer:
     """The class which contains the functionality to output the edited tree"""
 
-    def __init__(self, decomposer: Decomposer, file_location: str, write_over: bool, comments: bool):
+    def __init__(self, tree: DecomposerTree, file_location: str, write_over: bool, comments: bool):
         """Defines the init function to take in all of the required variables
 
         Args:
-            decomposer: Decomposer - the decomposer object to get the tree
+            tree: DecomposerTree - the tree to build the file from
             file_location: str - the location of the file to write to
             write_over: bool - whether to write over the file or append .new to the file name
             comments: bool - whether to include comments from the original file
         """
 
-        self.__tree: DecomposerTree = decomposer.get_tree()
+        self.__tree = tree
         if write_over:
             self.__file_location = file_location
         else:
@@ -80,7 +80,9 @@ class Composer:
                         self.__composer_iterator.lines += self.__composer_iterator.prepend + node.get_name() + " = {\n" + comment_for_after
                         self.__composer_iterator.previous_addition = self.__composer_iterator.prepend + node.get_name() + " = {\n"
                     else:
-                        raise CrazyError(self.__composer_iterator.lines)
+                        raise ErrorComposingFileFromTree(
+                                f"There was an error composing the file from the tree, here is what has been generated already {self.__composer_iterator.lines}"
+                        )
                 else:
                     self.__composer_iterator.lines += "\n\n{\n"
                     self.__composer_iterator.previous_addition = "\n\n{\n"
@@ -108,7 +110,9 @@ class Composer:
                         self.__composer_iterator.lines += self.__composer_iterator.prepend + node.get_name() + "."
                         self.__composer_iterator.previous_addition = self.__composer_iterator.prepend + node.get_name() + "."
                     else:
-                        raise CrazyError(self.__composer_iterator.lines)
+                        raise ErrorComposingFileFromTree(
+                                f"There was an error composing the file from the tree, here is what has been generated already {self.__composer_iterator.lines}"
+                        )
                 else:
                     self.__composer_iterator.lines += "\n\n{\n"
                     self.__composer_iterator.previous_addition += "\n\n{\n"
@@ -165,7 +169,9 @@ class Composer:
                     self.__composer_iterator.lines += self.__composer_iterator.prepend + data + ";\n"
                 self.__composer_iterator.previous_addition = self.__composer_iterator.prepend + data + ";\n"
             else:
-                raise CrazyError
+                raise ErrorComposingFileFromTree(
+                    f"There was an error composing the file from the tree, the previous character was unexpected, here is what there is currently: {self.__composer_iterator.lines}"
+                )
             if len(self.__composer_iterator.prepend) == 2:
                 self.__composer_iterator.lines += "\n"
                 self.__composer_iterator.previous_addition += "\n"
@@ -184,7 +190,9 @@ class Composer:
                     elif self.__composer_iterator.lines[-1] == "\n":
                         self.__composer_iterator.lines += self.__composer_iterator.prepend + node.get_name() + " = {\n"
                     else:
-                        raise CrazyError(self.__composer_iterator.lines)
+                        raise ErrorComposingFileFromTree(
+                                f"There was an error composing the file from the tree, here is what has been generated already {self.__composer_iterator.lines}"
+                        )
                 else:
                     self.__composer_iterator.lines += "\n\n{\n"
                 self.__composer_iterator.previous_prepend = self.__composer_iterator.prepend
@@ -206,7 +214,9 @@ class Composer:
                     elif self.__composer_iterator.lines[-1] == "\n":
                         self.__composer_iterator.lines += self.__composer_iterator.prepend + node.get_name() + "."
                     else:
-                        raise CrazyError(self.__composer_iterator.lines)
+                        raise ErrorComposingFileFromTree(
+                                f"There was an error composing the file from the tree, here is what has been generated already {self.__composer_iterator.lines}"
+                        )
                 else:
                     self.__composer_iterator.lines += "\n\n{\n"
                     self.__composer_iterator.previous_prepend = self.__composer_iterator.prepend
@@ -254,7 +264,9 @@ class Composer:
             elif self.__composer_iterator.lines[-1] == "\n":
                 self.__composer_iterator.lines += self.__composer_iterator.prepend + data + ";\n"
             else:
-                raise CrazyError
+                raise ErrorComposingFileFromTree(
+                    f"There was an error composing the file from the tree, the previous character was unexpected, here is what there is currently: {self.__composer_iterator.lines}"
+                )
 
     def __separate_and_add_headers(self) -> None:
         """Seperates the headers from the tree and adds them to the file

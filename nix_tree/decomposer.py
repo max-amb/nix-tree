@@ -123,7 +123,7 @@ class Decomposer:
         self.__file_path: Path = file_path
         self.__tree: DecomposerTree = tree
         if (not self.__file_path.exists()) or (self.__file_path.is_dir()):
-            raise FileNotFoundError("The configuration file does not exist")
+            raise FileNotFoundError(f"The configuration file: {str(file_path)} does not exist")
         self.__comment_handling = CommentHandling(file_path)
         self.__reading_the_full_file()
         self.__managing_headers()

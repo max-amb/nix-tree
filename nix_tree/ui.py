@@ -341,7 +341,7 @@ class UI(App[list[str]]):
                         if isinstance(node_to_edit, VariableNode):
                             node_to_edit.set_data(post.split("=")[1])
                         else:
-                            raise CrazyError(node_to_edit.get_name())
+                            raise NodeNotFound(node_name=full_path)
                     case "Section":
                         match action.split(" ")[-1]:
                             case "deleted":
@@ -603,4 +603,4 @@ def start_ui(file_location: str, write_over: bool, comments: bool) -> None:
             sleep(5)
             start_ui(file_location, write_over, comments)
         else:
-            Composer(decomposer, file_location, write_over, comments)
+            Composer(decomposer.get_tree(), file_location, write_over, comments)

@@ -242,7 +242,7 @@ class DecomposerTree:
         path = string_path.split(".")
         found_node = self.find_variable_node(contents, self.__root_node)
         if isinstance(found_node, VariableNode):
-            print("Node already in tree")
+            print("Encountered a repeated node - non-fatal error")
         elif isinstance(found_node, ConnectorNode):
             node_path = found_node.get_name()
             if not node_path == "":
@@ -253,6 +253,8 @@ class DecomposerTree:
             for node_itr in range(len(nodes) - 1):
                 nodes[node_itr].add_node(nodes[node_itr + 1])
             nodes[len(nodes) - 1].add_node(VariableNode(string_path, variable, find_type(variable)))
+        else:
+            raise TypeError("Found a node which isn't a variable or a connector node")
 
     def find_variable_node(self, path: str, node: Node, covered_path=None) -> Node:
         """Recursively searches the tree looking for a node
@@ -283,9 +285,10 @@ class DecomposerTree:
                 elif isinstance(i, VariableNode):
                     if path.split("=")[0] == i.get_name():
                         return i
-                raise TypeError("Found an node which isn't a variable or a connector node")
+                else:
+                    raise TypeError("Found a node which isn't a variable or a connector node")
             return node
-        raise TypeError("Found an node which isn't a variable or a connector node")
+        raise TypeError("Found a node which isn't a variable or a connector node")
 
     def find_node_parent(self, path: str, node: Node, covered_path=None) -> Node | None:
         """Finds the variable nodes parent

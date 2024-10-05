@@ -12,6 +12,9 @@ linkify-it-py = "^2.0.3"
 textual = "^0.79.1"
 hatchling = "^1.25.0"
 
+[tool.poetry.group.dev.dependencies]
+pytest = "^8.3.3"
+
 [build-system]
 requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"
