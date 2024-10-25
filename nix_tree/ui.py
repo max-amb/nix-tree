@@ -3,6 +3,7 @@
 import subprocess
 from pathlib import Path
 from time import sleep
+import re
 
 from textual.app import App, ComposeResult
 from textual.containers import Horizontal, Vertical, Center
@@ -13,7 +14,7 @@ from textual.widgets import Label, ListView, ListItem, OptionList, Tree, Header,
 from nix_tree.composer import Composer
 from nix_tree.custom_types import UIVariableNode, UIConnectorNode
 from nix_tree.decomposer import DecomposerTree, Decomposer
-from nix_tree.errors import CrazyError, NodeNotFound
+from nix_tree.errors import ErrorComposingFileFromTree, NodeNotFound
 from nix_tree.help_screens import MainHelpScreen
 from nix_tree.parsing import ParsingOptions, Types
 from nix_tree.stacks import OperationsStack, OperationsQueue
@@ -186,6 +187,40 @@ class UI(App[list[str]]):
             self.action_undo(empty_command=True)
         self.query_one("#operations_stack", ListView).clear()
 
+    def __extract_data_from_action(self, action: str) -> tuple[str, str, str]:
+        """This method extracts data from actions which is needed in undo and apply functionality
+
+        Args:
+            action: str - the action the method is working on
+
+        Raises:
+            ErrorComposingFileFromTree - If the regex doesn't match meaning the action is corrupted
+        """
+
+        path = ""
+        variable = ""
+        if "[" in action: # List types
+            if match := re.search(r"(Added|Delete|Change) (.*)\[(.*)\]", action):
+                path = match.group(2)
+                variable = "[" + match.group(3) + "]"
+            else:
+                raise ErrorComposingFileFromTree(message="Was unable to parse actions to apply to tree")
+            full_path = path + variable
+        elif "'" in action: # Any of the string types
+            if match := re.search(r"(Added|Delete|Change) (.*)''(.*)''", action):
+                path = match.group(2)
+                variable = "''" + match.group(3) + "''"
+            elif match := re.search(r"(Added|Delete|Change) (.*)'(.*)'", action):
+                path = match.group(2)
+                variable = "'" + match.group(3) + "'"
+            else:
+                raise ErrorComposingFileFromTree(message="Was unable to parse actions to apply to tree")
+            full_path = path + variable
+        else: # True falses and uniques
+            full_path = action.split(" ")[1]
+            path = full_path.split("=")[0]
+        return (path, variable, full_path)
+
     def action_undo(self, empty_command: bool = False) -> None:
         """Performs the undo commands by popping the change from the stack and reverse engineering it
 
@@ -195,21 +230,11 @@ class UI(App[list[str]]):
         """
 
         if self.__stack.get_len() > 0:
-            if not empty_command:
+            if not empty_command: # To make the empty functionality more efficient we clear it all at once elsewhere
                 self.query_one("#operations_stack", ListView).pop(0)
             action: str | None = self.__stack.pop().name
             if action:
-                if "[" in action:
-                    path = action.split("=")[0].split(" ")[1]
-                    variable: str = action[action.index("["):action.index("]") + 1]
-                    full_path = path + "=" + variable
-                elif "'" in action:
-                    path = action.split("=")[0].split(" ")[1]
-                    variable: str = "'" + action.split("'")[1] + "'"
-                    full_path = path + "=" + variable
-                else:
-                    full_path = action.split(" ")[1]
-                    path = full_path.split("=")[0]
+                path, variable, full_path = self.__extract_data_from_action(action)
                 match action.split(" ")[0]:
                     case "Delete":
                         var_type = None
@@ -295,7 +320,6 @@ class UI(App[list[str]]):
     def __remove_empty_sections(self, node: UIConnectorNode, operations: list[str]) -> list[str]:
         if node.children:
             for child in node.children:
-                print(child.label)
                 operations = self.__remove_empty_sections(child, operations)
         elif "=" not in node.label:
             node.remove()
@@ -310,17 +334,10 @@ class UI(App[list[str]]):
         while self.__queue.get_len() > 0:
             action = self.__queue.dequeue().name
             if action:
-                if "[" in action:
-                    path = action.split("=")[0].split(" ")[1]
-                    variable: str = action[action.index("["):action.index("]") + 1]
-                    full_path = path + "=" + variable
-                elif "'" in action:
-                    path = action.split("=")[0].split(" ")[1]
-                    variable: str = "'" + action.split("'")[1] + "'"
-                    full_path = path + "=" + variable
-                else:
-                    full_path = action.split(" ")[1]
-                    path = full_path.split("=")[0]
+                # This section is pulling all of the data from the action such as the path of the option and the data
+                _, _, full_path = self.__extract_data_from_action(action)
+
+                # Performing the operations on the tree
                 match action.split(" ")[0]:
                     case "Added":
                         tree.add_branch(full_path)
@@ -339,9 +356,14 @@ class UI(App[list[str]]):
                         post: str = change_command.split("->")[1].strip()
                         node_to_edit: Node = tree.find_variable_node(pre, tree.get_root())
                         if isinstance(node_to_edit, VariableNode):
-                            node_to_edit.set_data(post.split("=")[1])
+                            if match := re.search(r"^(.*?)=(.*)$", post.strip()): # Question mark makes the match not greedy meaning it matches as few chars as possible
+                                node_to_edit.set_data(match.group(2))
+                            else:
+                                raise ErrorComposingFileFromTree(message="Invalid change command, please create an issue on github")
                         else:
                             raise NodeNotFound(node_name=full_path)
+
+                    # Sections need to be handled differently due to their unique commands
                     case "Section":
                         match action.split(" ")[-1]:
                             case "deleted":
@@ -448,6 +470,7 @@ class UI(App[list[str]]):
             for child in node.children:
                 if str(child.label) == path[0] + "=" + variable:
                     return child
+        return None
 
     def recursive_searching_for_connector(self, node: UIConnectorNode, path: list) -> UIConnectorNode | None:
         """Recursively searches for a section so the undo function can add and delete sections
@@ -469,6 +492,7 @@ class UI(App[list[str]]):
                 if str(child.label) == path[0]:
                     return child
             return node.tree.root
+        return None
 
     def on_tree_node_selected(self, node: Tree.NodeSelected) -> None:
         """Called when the user selects a node (section or var) and brings up the appropriate screens
