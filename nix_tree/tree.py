@@ -316,6 +316,7 @@ class DecomposerTree:
                     return self.find_node_parent(path, nodes, covered_path)
         else:
             return node
+        return None
 
     def find_section_node_parent(self, path: str, node: Node, covered_path: list = None) -> Node | None:
         """Finds a section nodes parent
@@ -336,6 +337,7 @@ class DecomposerTree:
                     return self.find_node_parent(path, nodes, covered_path)
         else:
             return node
+        return None
 
     def quick_display(self, node: Node, append: str = "") -> None:
         """Recursively displays the tree on the console

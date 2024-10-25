@@ -387,6 +387,7 @@ class AddScreenPath(ModalScreen[list]):
                     node.add_leaf(self.__path.split(".")[-1] + "=" + data,
                                   data={'.'.join(path_as_list) + "." + self.__path: data, "type": data_type})
                 return True
+        return None
 
     def action_quit_pressed(self) -> None:
         """Quits the screen when one of the quit buttons are pressed"""
