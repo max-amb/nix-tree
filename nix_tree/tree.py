@@ -79,7 +79,7 @@ class Node:
 
         self.__comments = comments
 
-    def get_comments(self) -> list[str]:
+    def get_comments(self) -> list[tuple[str,bool]]:
         """To get the comments of the current node
 
         Returns:
@@ -214,9 +214,6 @@ class VariableNode(Node):
 
 class DecomposerTree:
     """An implementation of a rooted tree
-
-    Note:
-        https://computersciencewiki.org/index.php/Tree#Standards
     """
 
     def __init__(self) -> None:
@@ -341,7 +338,7 @@ class DecomposerTree:
         return None
 
     def quick_display(self, node: Node, append: str = "") -> None:
-        """Recursively displays the tree on the console
+        """Uses recursion to display the tree to the console
 
         Args:
             node: Node - the node to start displaying from - usually the root node
