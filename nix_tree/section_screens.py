@@ -1,4 +1,4 @@
-"""All of the section management screens, such as adding a var or section or deleting a section"""
+"""The section management screens, such as adding a var or section or deleting a section"""
 
 import re
 

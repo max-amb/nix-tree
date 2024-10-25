@@ -69,7 +69,7 @@ class Node:
         """
         return []
 
-    def set_comments(self, comments: list[str]) -> None:
+    def set_comments(self, comments: list[tuple[str,bool]]) -> None:
         """To set the comments of the current node
 
         Args:
@@ -238,7 +238,13 @@ class DecomposerTree:
             contents: str - the variables full path
         """
 
-        string_path, variable = (contents.split("=")[0], contents.split("=")[1])
+        if contents.count("=") >= 2: # To account for having equals in strings
+            equals_splits = contents.split("=")
+            string_path = equals_splits[0]
+            del equals_splits[0]
+            variable = '='.join(equals_splits)
+        else:
+            string_path, variable = (contents.split("=")[0], contents.split("=")[1])
         path = string_path.split(".")
         found_node = self.find_variable_node(contents, self.__root_node)
         if isinstance(found_node, VariableNode):
@@ -290,13 +296,13 @@ class DecomposerTree:
             return node
         raise TypeError("Found a node which isn't a variable or a connector node")
 
-    def find_node_parent(self, path: str, node: Node, covered_path=None) -> Node | None:
+    def find_node_parent(self, path: str, node: Node, covered_path: list = None) -> Node | None:
         """Finds the variable nodes parent
 
         Args:
             path: str - the full path of the node
             node: Node - the current node we are searching
-            covered_path - how much of the path we have searched
+            covered_path: list - how much of the path we have searched
         """
 
         if covered_path is None:
@@ -311,13 +317,13 @@ class DecomposerTree:
         else:
             return node
 
-    def find_section_node_parent(self, path: str, node: Node, covered_path=None) -> Node | None:
+    def find_section_node_parent(self, path: str, node: Node, covered_path: list = None) -> Node | None:
         """Finds a section nodes parent
 
         Args:
             path: str - the full path of the node
             node: Node - the current node we are searching
-            covered_path - how much of the path we have searched
+            covered_path: list - how much of the path we have searched
         """
 
         if covered_path is None:

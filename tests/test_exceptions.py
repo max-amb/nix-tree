@@ -17,6 +17,17 @@ def test_file_not_found_error():
         Decomposer(Path("/"), DecomposerTree())
     assert str(exception_val.value) == "The configuration file: / does not exist"
 
+def test_file_found_no_error():
+    """
+    Testing that FileNotFoundError is not raised if the program
+    is passed in a valid file
+    """
+
+    try:
+        Decomposer(Path("./example_configurations/shortened_default.nix"), DecomposerTree())
+    except FileNotFoundError:
+        pytest.fail("File not found error raised where file existed")
+
 def test_no_valid_headers_node_error():
     """
     Testing that if we pass the composer an empty tree, it errors

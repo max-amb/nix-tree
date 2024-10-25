@@ -21,7 +21,7 @@ class Composer:
     """The class which contains the functionality to output the edited tree"""
 
     def __init__(self, tree: DecomposerTree, file_location: str, write_over: bool, comments: bool):
-        """Defines the init function to take in all of the required variables
+        """Defines the init function to take in the required variables
 
         Args:
             tree: DecomposerTree - the tree to build the file from
@@ -149,7 +149,8 @@ class Composer:
                 data += node.get_data()
 
             #  to change ' back into "
-            data = re.sub("'", "\"", data)
+            if not re.search(r"^''.*''$", node.get_data()):
+                data = re.sub("'", "\"", data)
 
             if node.get_type() == Types.LIST and "(" in data:  # needs to be handled with a with clause
                 with_clause = data[data.index("(") + 1:data.index(")")]
@@ -252,7 +253,8 @@ class Composer:
                 data += node.get_data()
 
             #  to change ' back into "
-            data = re.sub("'", "\"", data)
+            if not re.search(r"^''.*''$", node.get_data()):
+                data = re.sub("'", "\"", data)
 
             if node.get_type() == Types.LIST and "(" in data:  # needs to be handled with a with clause
                 with_clause = data[data.index("(") + 1:data.index(")")]
@@ -269,7 +271,7 @@ class Composer:
                 )
 
     def __separate_and_add_headers(self) -> None:
-        """Seperates the headers from the tree and adds them to the file
+        """Separates the headers from the tree and adds them to the file
 
         Note:
             This is required due to the unique syntax of headers in a Nix file

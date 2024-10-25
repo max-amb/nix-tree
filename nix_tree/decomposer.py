@@ -14,7 +14,6 @@ class Iterator:
     prepend: str = ""
     previous_prepend: str = ""
 
-
 class CommentHandling:
     """Class to handle the comments in a Nix file"""
 
@@ -41,7 +40,7 @@ class CommentHandling:
         """
         with self.__file_path.open(mode='r') as configuration_file:
             for line_num, line in enumerate(configuration_file):
-                if re.search(r"^\s*#.*$", line):
+                if re.search(r"^[^\S\n]*#.*$", line):
                     self.__lines_with_comments.update({line_num: (line, True)})
                 elif "#" in line:
                     self.__lines_with_comments.update({line_num: (line, False)})
@@ -59,12 +58,8 @@ class CommentHandling:
         """
         new_file: str = ""
         with self.__file_path.open(mode="r") as configuration_file:
-            for line_num, line in enumerate(configuration_file):
-                if line_num in self.__lines_with_comments.keys():
-                    split_on_comment: list = line.split("#")
-                    new_file += split_on_comment[0]
-                else:
-                    new_file += line
+            for line in configuration_file:
+                new_file += re.sub(r"#.*", "", line)
         return new_file
 
     def __compressing_comments(self) -> None:
@@ -101,7 +96,9 @@ class CommentHandling:
         """Returns the cleaned up comments dict
 
         Returns:
-            dict[int, list[tuple[str, bool]]] - the comments dict
+            dict[int, list[tuple[str, bool]]] - the comments dict, int: line number, tuple[str,bool]: the string is the
+                                                comment and the bool is true if the comment stands on a line by itself and
+                                                false if otherwise. The list stores multiple of these tuples
         """
 
         return self.__comments
@@ -180,6 +177,27 @@ class Decomposer:
             headers.append(header.strip())
         self.__tree.add_branch(contents=f"headers=[ {', '.join(headers)} ]")
 
+    def __connecting_spaced_lines(self, file: list[str], iterator: int) -> tuple[list[str], int]:
+        if re.search(r"^''(?!.*''$).*", file[iterator]):
+            j = iterator + 1
+            while j < len(file):
+                file[iterator] += " " + file[j]
+                if "''" in file[j]:
+                    iterator = j + 1
+                    del file[j]
+                    break
+                del file[j]
+        elif re.search(r'^"(?!.*"$).*', file[iterator]):
+            j = iterator + 1
+            while j < len(file):
+                file[iterator] += " " + file[j]
+                if '"' in file[j]:
+                    iterator = j + 1
+                    del file[j]
+                    break
+                del file[j]
+        return file, iterator
+
     def __prepare_the_file(self, file: str) -> list[str]:
         """Fixes issues with strings being split on spaces and splits the file
 
@@ -191,14 +209,15 @@ class Decomposer:
         """
 
         rest_of_file_split: list = file.split(" ")
-        for i, _ in enumerate(rest_of_file_split):
-            try:
-                if re.search(r"^'\S*\s*[^']$", rest_of_file_split[
-                    i]):  # Fixes issue with strings being split on spaces inside the string
-                    rest_of_file_split[i] += " " + rest_of_file_split[i + 1]
-                    del rest_of_file_split[i + 1]
-            except IndexError:
-                break  # Index errors are ok because we are deleting from the list
+        i = 0
+        while True:
+            if i < len(rest_of_file_split): # Doing it like this because the length changes every time
+                rest_of_file_split, i = self.__connecting_spaced_lines(rest_of_file_split, i)
+                i += 1
+            else:
+                break
+        for i, section in enumerate(rest_of_file_split):
+            rest_of_file_split[i] = re.sub("\"", "'", section)  # Happens outside of cleaning the configuration func to make pattern matching easier
         return rest_of_file_split
 
     def __managing_the_rest_of_the_file(self) -> None:
@@ -210,27 +229,41 @@ class Decomposer:
         Note:
             Check the flowchart in the writeup to learn more about this!
         """
-        comments = self.__comment_handling.get_comments_for_attaching()
+
+        # Getting the comments dictionary
+        comments: dict[int, list[tuple[str, bool]]] = self.__comment_handling.get_comments_for_attaching()
+
+        # Preparing the iterator to go through the file
         iterator = Iterator()
-        rest_of_file: str = self.__cleaning_the_configuration(self.__full_file[self.__full_file.index("}") + 1:])
-        groups = self.forming_groups_dict(rest_of_file)
-        rest_of_file_split = self.__prepare_the_file(rest_of_file)
-        equals_locations: list = self.finding_equals_signs(rest_of_file_split)
-        equals_locations = self.__find_equal_locations_lines(equals_locations)
-        comments_attached_to_id: dict[str, str] = {}
+
+        # Cleaning and preparing the files - one version has \n and one does not and has empty space
+        rest_of_file_with_lines: str = self.__cleaning_the_configuration(self.__full_file[self.__full_file.index("}") + 1:])
+        rest_of_file_without_lines = re.sub(r"\n", "", rest_of_file_with_lines)
+        rest_of_file_split = self.__prepare_the_file(rest_of_file_without_lines)
+
+        equals_locations: list = self.__finding_equals_signs(rest_of_file_split)
+        equals_locations = self.__find_equal_locations_lines(equals_locations, rest_of_file_with_lines)
+
+        groups = self.forming_groups_dict(' '.join(rest_of_file_split))
+        comments_attached_to_id: dict[str, list[tuple[str, bool]]] = {}
         iterator.previous_prepend = ""
 
         while iterator.equals_number <= len(equals_locations) - 1:
             try:
-                comment = comments.pop(equals_locations[iterator.equals_number][2])
+                comment_list: list[tuple[str, bool]] = comments.pop(equals_locations[iterator.equals_number][2])
                 comments_attached_to_id.update({
                     self.__checking_group(groups, equals_locations[iterator.equals_number][0]) +
                     rest_of_file_split[equals_locations[iterator.equals_number][1] - 1] :
-                    comment
+                    comment_list
                 })
             except KeyError:  # If there isn't a comment attached
                 pass
-            match rest_of_file_split[equals_locations[iterator.equals_number][1] + 1]:
+            place_to_check = 1
+            for i in range(1, len(rest_of_file_split)): # To stop empty portions lile [""] being an issue and meaning something was skipped
+                if rest_of_file_split[equals_locations[iterator.equals_number][1] + i] != "":
+                    place_to_check = i
+                    break
+            match rest_of_file_split[equals_locations[iterator.equals_number][1] + place_to_check]:
                 case "{":
                     pass  # To stop brackets being added as variables
                 case "[":
@@ -238,7 +271,7 @@ class Decomposer:
                     iterator.prepend += rest_of_file_split[equals_locations[iterator.equals_number][1] - 1] + "="
                     # Should not be an index error unless the Nix file is invalid
                     in_the_brackets: list = []
-                    for phrase_itr in range(equals_locations[iterator.equals_number][1] + 2, len(rest_of_file)):
+                    for phrase_itr in range(equals_locations[iterator.equals_number][1] + place_to_check + 1, len(rest_of_file_without_lines)):
                         if rest_of_file_split[phrase_itr] == "];":
                             break
                         in_the_brackets.append(rest_of_file_split[phrase_itr])
@@ -248,26 +281,26 @@ class Decomposer:
                     iterator.prepend += self.__checking_group(groups, equals_locations[iterator.equals_number][0])
                     iterator.prepend += rest_of_file_split[equals_locations[iterator.equals_number][1] - 1] + "="
                     in_the_brackets: list = []
-                    for phrase_itr in range(equals_locations[iterator.equals_number][1] + 5, len(rest_of_file)):
+                    for phrase_itr in range(equals_locations[iterator.equals_number][1] + place_to_check + 4, len(rest_of_file_without_lines)):
                         if rest_of_file_split[phrase_itr] == "];":
                             break
-                        in_the_brackets.append(f"({rest_of_file_split[equals_locations[iterator.equals_number][1] + 2]}"
+                        in_the_brackets.append(f"({rest_of_file_split[equals_locations[iterator.equals_number][1] + place_to_check + 1]}"
                                                f").{rest_of_file_split[phrase_itr]}")
                     self.__tree.add_branch(f"{iterator.prepend}[ {' '.join(in_the_brackets)} ]")
                     iterator.prepend = iterator.previous_prepend
                 case "lib.mkDefault" | "lib.mkForce":
                     iterator.prepend += self.__checking_group(groups, equals_locations[iterator.equals_number][0])
                     iterator.prepend += rest_of_file_split[equals_locations[iterator.equals_number][1] - 1] + "="
-                    iterator.prepend += rest_of_file_split[equals_locations[iterator.equals_number][1] + 1] + "."
+                    iterator.prepend += rest_of_file_split[equals_locations[iterator.equals_number][1] + place_to_check] + "."
                     self.__tree.add_branch(iterator.prepend +
-                                           rest_of_file_split[equals_locations[iterator.equals_number][1] + 2],
+                                           rest_of_file_split[equals_locations[iterator.equals_number][1] + place_to_check + 1],
                                            )
                     iterator.prepend = iterator.previous_prepend
                 case _:  # Then it is a variable
                     iterator.prepend += self.__checking_group(groups, equals_locations[iterator.equals_number][0])
                     iterator.prepend += rest_of_file_split[equals_locations[iterator.equals_number][1] - 1] + "="
                     self.__tree.add_branch(
-                        iterator.prepend + rest_of_file_split[equals_locations[iterator.equals_number][1] + 1])
+                        iterator.prepend + rest_of_file_split[equals_locations[iterator.equals_number][1] + place_to_check])
                     iterator.prepend = iterator.previous_prepend
             iterator.equals_number += 1
         self.__add_comments_to_nodes(self.__tree.get_root(), "", comments_attached_to_id)
@@ -289,28 +322,6 @@ class Decomposer:
                 to_be_prepended += group[0] + "."
         return to_be_prepended
 
-    @staticmethod
-    def finding_equals_signs(file: list) -> list:
-        """Iterates through the file - split on spaces - to find the equals signs positions
-
-        Args:
-            file: list - The list containing the split configuration file
-
-        Returns:
-            locations: list - A list containing all the locations of the equals in the file
-
-        Note:
-            The tuples used in the locations list allow for the equals locations to be used when the file is split and
-            when it is not split
-        """
-        locations: list = []
-        char_location = 0
-        for i, phrase in enumerate(file):
-            char_location += len(phrase)
-            if phrase == "=":
-                locations.append((char_location, i))
-        return locations
-
     def __cleaning_the_configuration(self, file: str) -> str:
         """This cleans the configuration with regex substitution to make it possible to tokenize
 
@@ -320,16 +331,18 @@ class Decomposer:
         Returns:
             file: str - the file all on one line now cleaned
         """
-        file = re.sub(r"\s+", " ", file)
+        file = re.sub(r"[^\S\n]+", " ", file)
         file = re.sub("=", " = ", file)
-        file = re.sub(r"\s}", " } ", file)
-        file = re.sub(r"\s{", " { ", file)
-        file = re.sub("\"", "'", file)  # For easier handling of strings
+        file = re.sub(r"[^\S\n]}", " } ", file)
+        file = re.sub(r"[^\S\n]{", " { ", file)
         file = re.sub(";", " ; ", file)  # For with clauses
-        file = re.sub(r"}\s*;", "}; ", file)
-        file = re.sub(r"]\s*;", "]; ", file)
+        file = re.sub(r"}[^\S\n]*;", "}; ", file)
+        file = re.sub(r"\][^\S\n]*;", "]; ", file)
+        file = re.sub(r'\[[^\S\n]*"', '[ "', file)
+        file = re.sub(r"\[[^\S\n]*'", "[ '", file)
+        file = re.sub(r"\[[^\S\n]*''", "[ ''", file)
         file = re.sub(r"(\S*)(];)", r"\1 \2", file)
-        file = re.sub(r"\s+", " ", file)
+        file = re.sub(r"[^\S\n]+", " ", file)
         return file
 
     def forming_groups_dict(self, file: str) -> dict[str, tuple[int, int]]:
@@ -342,12 +355,13 @@ class Decomposer:
             groups: dict[str, tuple[int, int]] - The groups dictionary - sorted due to passing it through the
             function before returning
         """
+
         groups: dict[str, tuple[int, int]] = {}
         stack = GroupsStack()
         character_iterator = 0
         split_file: list = file.split(" ")
         for i, phrase in enumerate(split_file):
-            character_iterator += len(phrase)
+            character_iterator += len(phrase)+1
             if phrase == "{":
                 stack.push((split_file[i - 2], (character_iterator, 0)))
             if phrase == "};":
@@ -378,7 +392,26 @@ class Decomposer:
             new_groups.update({largest_group[0]: (largest_group[1][0], largest_group[1][1])})
         return new_groups
 
-    def __find_equal_locations_lines(self, equals_locations: list) -> list:
+    def __finding_equals_signs(self, file: list) -> list:
+        """Iterates through the file - split on spaces - to find the equals signs positions
+
+        Args:
+            file: list - The list containing the split configuration file
+
+        Returns:
+            locations: list - A list containing all the locations of the equals in the file
+
+        Note:
+            The tuples used in the locations list allow for the equals locations to be used when the file is split and
+            when it is not split
+        """
+        locations: list = []
+        for i, phrase in enumerate(file):
+            if phrase == "=":
+                locations.append((0, i))
+        return locations
+
+    def __find_equal_locations_lines(self, equals_locations: list, file_with_lines: str) -> list:
         """Goes through the equals locations list and finds their lines
 
         Args:
@@ -387,24 +420,46 @@ class Decomposer:
         Returns:
             list - the equals locations list with line numbers
         """
+        def replace_single_speech(match):
+            return "'" + 'A' * (len(match.group(0))-2) + "'"
 
-        lines: list[str] = self.__file_path.open(mode='r').readlines()
+        def replace_double_speech(match):
+            # As double quote strings can have new lines in them
+            string = "''"
+            content = match.group(0)
+            for char in content:
+                if char == "\n":
+                    string += "\n"
+                elif char == "'":
+                    pass
+                else:
+                    string += "A"
+            return string + "''"
 
-        # Cleaning
-        for i, line in enumerate(lines):
-            lines[i] = lines[i].strip()
-            if "#" in line:
-                lines[i] = lines[i].split("#")[0].strip()
+        def replace_normal_speech(match):
+            return '\"' + 'A' * (len(match.group(0))-2) + '\"'
 
+        file = file_with_lines
+        # This is ensuring we do not count equals in strings or comments
+        # This is weird as it needs to make sure to distinguish between '"123"' and '"123" "asd"'
+        file = re.sub(r'"[^"]*"', replace_normal_speech, file)
+        file = re.sub(r"''[^'']*''", replace_double_speech, file)
+        file = re.sub(r"'[^']*'", replace_single_speech, file)
+        file = re.sub(r"#.*", "", file)
+        file_split_on_lines: list[str] = file.splitlines()
+
+        # Now we iterate through and find those equals lines
         equals_num = 0
-        for i, line in enumerate(lines):
-            number_of_equals = line.count("=")
-            for _ in range(number_of_equals):
-                equals_locations[equals_num] = (equals_locations[equals_num][0], equals_locations[equals_num][1], i)
+        char_count = 0
+        for line_num, line in enumerate(file_split_on_lines):
+            equals = re.finditer("=", line)
+            for i in equals:
+                equals_locations[equals_num] = (char_count+i.start(), equals_locations[equals_num][1], line_num)
                 equals_num += 1
+            char_count += len(line)
         return equals_locations
 
-    def __add_comments_to_nodes(self, node: Node, prepend: str, comments: dict[str, str]):
+    def __add_comments_to_nodes(self, node: Node, prepend: str, comments: dict[str, list[tuple[str,bool]]]):
         """Adds the comment lists to their respective nodes
 
         Args:
@@ -416,10 +471,10 @@ class Decomposer:
         prepend += "."+node.get_name().split("=")[0]
         try:
             if isinstance(node, VariableNode):
-                comment = comments.pop(node.get_name())
+                comment: list[tuple[str, bool]] = comments.pop(node.get_name())
                 node.set_comments(comment)
             else:
-                comment = comments.pop(prepend[2:])
+                comment: list[tuple[str, bool]] = comments.pop(prepend[2:])
                 node.set_comments(comment)
         except KeyError:
             pass

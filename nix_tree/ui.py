@@ -152,7 +152,7 @@ class UI(App[list[str]]):
 
         # This allows for the program to run without a constant options location
         # It was an issue as it wouldn't allow the program to be installed without hardcoding
-        # the options location.
+        # the location of the options file.
         path_of_executable = Path(__file__).parts
         options_location = Path()
         if 'store' in path_of_executable: # If it is being run as a flake
