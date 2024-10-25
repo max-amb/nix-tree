@@ -24,7 +24,7 @@ def test_file_found_no_error():
     """
 
     try:
-        Decomposer(Path("./example_configurations/shortened_default.nix"), DecomposerTree())
+        Decomposer(Path("./tests/example_configurations/shortened_default.nix"), DecomposerTree())
     except FileNotFoundError:
         pytest.fail("File not found error raised where file existed")
 
