@@ -3,7 +3,7 @@
 import re
 from dataclasses import dataclass
 
-from nix_tree.errors import NoValidHeadersNode, CrazyError, ErrorComposingFileFromTree
+from nix_tree.errors import NoValidHeadersNode, ErrorComposingFileFromTree
 from nix_tree.decomposer import DecomposerTree
 from nix_tree.tree import VariableNode, ConnectorNode, Node
 from nix_tree.parsing import Types
