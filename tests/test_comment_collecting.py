@@ -1,5 +1,4 @@
 from pathlib import Path
-import pytest
 
 from nix_tree.decomposer import CommentHandling
 

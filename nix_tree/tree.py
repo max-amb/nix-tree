@@ -1,4 +1,5 @@
 """Contains the tree implementation"""
+import re
 
 from nix_tree.custom_types import UIConnectorNode
 from nix_tree.parsing import Types
@@ -23,9 +24,9 @@ def find_type(variable: str) -> Types:
         return Types.INT
     if variable in ("true", "false"):
         return Types.BOOL
-    if "[" in variable:
+    if re.search(r"^\s*\[.*\]\s*$", variable):
         return Types.LIST
-    if "'" in variable:
+    if re.search(r"^\s*(\"|'|'').*(\"|'|'')\s*$", variable):
         return Types.STRING
     return Types.UNIQUE
 
