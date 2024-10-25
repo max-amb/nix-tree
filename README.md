@@ -61,4 +61,5 @@ nix run 'github:max-amb/nix-tree' <your filename>
 ## Limitations
 This program obviously is not perfect, hence there are some limitations that should be taken into account by the user:
 * The program cannot currently parse the `let in` combination or any flake for that matter
-* It may not be able to handle multiline strings often found in `extraConfig` options
+* ~~It may not be able to handle multiline strings often found in `extraConfig` options~~ The program can take them as input but has no way of displaying different lines or outputting different lines
+* Comments done with `/* */` aren't stored for re-attachment as they are often inside clauses
