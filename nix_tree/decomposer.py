@@ -5,6 +5,7 @@ import re
 
 from nix_tree.stacks import GroupsStack
 from nix_tree.tree import DecomposerTree, Node, VariableNode
+from nix_tree.errors import ErrorHandlingComments
 
 
 @dataclass
@@ -57,8 +58,20 @@ class CommentHandling:
             This also acts as a getter for the config without comments
         """
         new_file: str = ""
+        in_multiline_comment = False
         with self.__file_path.open(mode="r") as configuration_file:
             for line in configuration_file:
+                if "*/" in line:
+                    if in_multiline_comment:
+                        in_multiline_comment = False
+                        line = re.sub(r"^\*/", "", line)
+                    else:
+                        line = re.sub(r"/\*.*\*/", "", line)
+                elif "/*" in line:
+                    if in_multiline_comment:
+                        raise ErrorHandlingComments(line=line)
+                    line = re.sub(r"/\*.*", "", line)
+                    in_multiline_comment = True
                 new_file += re.sub(r"#.*", "", line)
         return new_file
 
