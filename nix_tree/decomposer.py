@@ -245,21 +245,23 @@ class Decomposer:
 
         # Getting the comments dictionary
         comments: dict[int, list[tuple[str, bool]]] = self.__comment_handling.get_comments_for_attaching()
+        comments_attached_to_id: dict[str, list[tuple[str, bool]]] = {}
 
         # Preparing the iterator to go through the file
         iterator = Iterator()
+        iterator.previous_prepend = ""
 
         # Cleaning and preparing the files - one version has \n and one does not and has empty space
         rest_of_file_with_lines: str = self.__cleaning_the_configuration(self.__full_file[self.__full_file.index("}") + 1:])
         rest_of_file_without_lines = re.sub(r"\n", "", rest_of_file_with_lines)
         rest_of_file_split = self.__prepare_the_file(rest_of_file_without_lines)
 
+        # Collecting the equals locations
         equals_locations: list = self.__finding_equals_signs(rest_of_file_split)
         equals_locations = self.__find_equal_locations_lines(equals_locations, rest_of_file_with_lines)
 
+        # Finding the locations of groups
         groups = self.forming_groups_dict(' '.join(rest_of_file_split))
-        comments_attached_to_id: dict[str, list[tuple[str, bool]]] = {}
-        iterator.previous_prepend = ""
 
         while iterator.equals_number <= len(equals_locations) - 1:
             try:
@@ -287,6 +289,8 @@ class Decomposer:
                     for phrase_itr in range(equals_locations[iterator.equals_number][1] + place_to_check + 1, len(rest_of_file_without_lines)):
                         if rest_of_file_split[phrase_itr] == "];":
                             break
+                        if re.search(r"^\s*$", rest_of_file_split[phrase_itr]):
+                            continue
                         in_the_brackets.append(rest_of_file_split[phrase_itr])
                     self.__tree.add_branch(f"{iterator.prepend}[ {' '.join(in_the_brackets)} ]")
                     iterator.prepend = iterator.previous_prepend
