@@ -9,6 +9,8 @@ YASU_TREE = """{}{  |--headers=[ config, pkgs, ... ]}{  |--imports=[ ./hardware-
 
 SHORTENED_DEFAULT_TREE = """{}{  |--headers=[ config, pkgs, ... ]}{  |--imports=[ ./hardware-configuration.nix ]}{  boot}{    loader}{      grub}{        |--enable=true}{        |--device='/dev/sda'}{        |--useOSProber=true}{  networking}{    |--hostName='nixos'}{    networkmanager}{      |--enable=true}{  time}{    |--timeZone='Europe/London'}{  i18n}{    |--defaultLocale='en_GB.UTF-8'}{  services}{    xserver}{      |--enable=true}{  programs}{    firefox}{      |--enable=true}{  nixpkgs}{    config}{      |--allowUnfree=true}{  environment}{    |--systemPackages=[ (pkgs).vim (pkgs).git ]}{  system}{    |--stateVersion='23.11'}"""
 
+PMS_TREE = """{}{  |--headers=[ config, pkgs, ... ]}{  |--imports=[ ./hardware-configuration.nix ]}{  boot}{    loader}{      systemd-boot}{        |--enable=true}{      efi}{        |--canTouchEfiVariables=true}{    |--supportedFilesystems=[ 'zfs' ]}{    zfs}{      |--forceImportRoot=false}{  services}{    zfs}{      autoScrub}{        |--enable=true}{    openssh}{      |--enable=true}{      settings}{        |--PasswordAuthentication=false}{        |--PermitRootLogin='yes'}{    tailscale}{      |--enable=true}{    xserver}{      |--enable=true}{      displayManager}{        lightdm}{          |--enable=true}{        |--defaultSession='xfce'}{      desktopManager}{        xfce}{          |--enable=true}{      windowManager}{        bspwm}{          |--enable=true}{    samba-wsdd}{      |--enable=true}{    samba}{      |--enable=true}{      |--securityType='user'}{      |--extraConfig='' workgroup = KTZ server string = testnix netbios name = testnix security = user guest ok = yes guest account = nobody map to guest = bad user load printers = no ''}{      shares}{        zfstest}{          |--path='/mnt/zfstest'}{          |--browseable='yes'}{          |--'read only'='no'}{          |--'guest ok'='yes'}{          |--'create mask'='0644'}{          |--'directory mask'='0755'}{          |--'force user'='alex'}{          |--'force group'='users'}{  time}{    |--timeZone='America/New_York'}{  users}{    users}{      alex}{        |--isNormalUser=true}{        |--extraGroups=[ 'wheel' 'docker' ]}{        openssh}{          authorizedKeys}{            |--keyFiles=[ /etc/nixos/ssh/authorized_keys ]}{      users}{        root}{          openssh}{            authorizedKeys}{              |--keyFiles=[ /etc/nixos/ssh/authorized_keys ]}{  environment}{    |--systemPackages=[ (pkgs).docker-compose (pkgs).htop (pkgs).hddtemp (pkgs).intel-gpu-tools (pkgs).iotop (pkgs).lm_sensors (pkgs).mergerfs (pkgs).mc (pkgs).ncdu (pkgs).nmap (pkgs).nvme-cli (pkgs).sanoid (pkgs).snapraid (pkgs).tdns-cli (pkgs).tmux (pkgs).tree (pkgs).vim (pkgs).wget (pkgs).smartmontools (pkgs).e2fsprogs (pkgs). ]}{  networking}{    firewall}{      |--enable=false}{    |--hostName='testnix'}{    |--hostId='e5f2dc02'}{    interfaces}{      enp1s0}{        |--useDHCP=false}{    |--defaultGateway='10.42.0.254'}{    |--nameservers=[ '10.42.0.253' ]}{  virtualisation}{    docker}{      |--enable=true}{      autoPrune}{        |--enable=true}{        |--dates='weekly'}{  nix}{    settings}{      |--experimental-features=[ 'nix-command' 'flakes' ]}{      |--warn-dirty=false}{  system}{    |--copySystemConfiguration=true}{    |--stateVersion='23.05'}"""
+
 def tree_output(node: Node, append: str = "", output_string: str = "") -> str:
     """
     Outputs the tree in an easier format for testing - its a really similar function to tree.quick_display()
@@ -48,3 +50,12 @@ def test_tree_for_shortened_default_config():
     tree = DecomposerTree()
     Decomposer(file_path=Path("./tests/example_configurations/shortened_default.nix"), tree=tree)
     assert SHORTENED_DEFAULT_TREE == tree_output(tree.get_root())
+
+def test_tree_for_pms_example_config():
+    """
+    Checks if the tree generator functions in decomposer and tree work as expected for the pms example config
+    """
+
+    tree = DecomposerTree()
+    Decomposer(file_path=Path("./tests/example_configurations/pms_example_config.nix"), tree=tree)
+    assert PMS_TREE == tree_output(tree.get_root())

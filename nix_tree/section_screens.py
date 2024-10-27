@@ -80,8 +80,9 @@ class AddScreenStringUniqueList(ModalScreen[str]):
             user_input: Input.Submitted - the choice of the user
         """
 
-        clean_input: str = re.sub(r"(\[)(\s*)", "[ ", user_input.value)
-        clean_input: str = re.sub(r"(\s*)(\])", " ]", clean_input)
+        clean_input: str = re.sub(r"\"", "'", user_input.value)
+        clean_input = re.sub(r"(\[)(\s*)", "[ ", clean_input)
+        clean_input = re.sub(r"(\s*)(\])", " ]", clean_input)
         self.dismiss(clean_input)
 
 
@@ -118,12 +119,17 @@ class AddScreenGroup(ModalScreen[list]):
             If the section is being added to the root node, the second method of addition would put a dot at the
             start hence the if statement
         """
-        self.__node.node.add(user_input.value)
-        if self.__node.node.is_root:
-            self.dismiss([f"Section {user_input.value} added"])
+
+        if re.search(r"[^a-zA-Z_]", user_input.value):
+            self.notify("You have entered invalid character(s) for the name of the group, not adding", title="error adding section",  severity="error")
+            self.dismiss(None)
         else:
-            full_path = '.'.join(work_out_full_path(self.__node.node, []))
-            self.dismiss([f"Section {full_path}.{user_input.value} added"])
+            self.__node.node.add(user_input.value)
+            if self.__node.node.is_root:
+                self.dismiss([f"Section {user_input.value} added"])
+            else:
+                full_path = '.'.join(work_out_full_path(self.__node.node, []))
+                self.dismiss([f"Section {full_path}.{user_input.value} added"])
 
 
 class AddScreenInteger(ModalScreen[str]):
@@ -275,7 +281,7 @@ class AddScreenPath(ModalScreen[list]):
             not get added
         """
 
-        def handle_return_from_variable_addition(data: tuple[str | list, Types | None] | None) -> None:
+        def handle_return_from_variable_addition(data: tuple[str, Types | None] | None) -> None:
             """Takes the data from variable addition and returns it back to the main class
 
             Args:
@@ -286,18 +292,15 @@ class AddScreenPath(ModalScreen[list]):
             """
 
             if data:
-                if isinstance(data[0], list):  # It's a group being added
-                    self.dismiss(data[0])
-                    return
-                if data[1] == Types.LIST and (not re.search(r"\A\[.+]\Z", data[0])):
-                    self.notify("You lost a bracket! Not updating")
+                if data[1] == Types.LIST and (not re.search(r"^\s*\[[^\]]*\]\s*$", data[0])):
+                    self.notify("You lost (or gained) a bracket! Not updating", title="error adding option",  severity="error")
                     if type_as_defined:
                         self.app.push_screen(RecommendedTypeOrChooseType(type_as_defined),
                                              handle_return_from_variable_addition)
                     else:
                         self.app.push_screen(AddScreenVariableSelection(), handle_return_from_variable_addition)
-                elif data[1] == Types.STRING and (not re.search(r"\A'.+'\Z", data[0])):
-                    self.notify("You lost a speech mark! Not updating")
+                elif data[1] == Types.STRING and (not re.search(r"^\s*'[^']*'\s*$", data[0])):
+                    self.notify("You lost (or gained) a speech mark! Not updating", title="error adding option",  severity="error")
                     if type_as_defined:
                         self.app.push_screen(RecommendedTypeOrChooseType(type_as_defined),
                                              handle_return_from_variable_addition)
@@ -319,16 +322,20 @@ class AddScreenPath(ModalScreen[list]):
             else:
                 self.app.pop_screen()
 
-        self.__path = path.value
-        path_leading_up_to_section = ""
-        if not self.__node.node.is_root:
-            path_leading_up_to_section: str = '.'.join(work_out_full_path(self.__node.node, [])) + "."
-        type_as_defined: tuple[Types, str] | None = self.__options.check_type(path_leading_up_to_section + path.value)
-        if type_as_defined:
-            self.app.push_screen(RecommendedTypeOrChooseType(type_as_defined),
-                                 handle_return_from_variable_addition)
+        if re.search(r"[^a-zA-Z_]", path.value):
+            self.notify("You have entered invalid character(s) for the path of your option, not adding", title="error adding option",  severity="error")
+            self.dismiss(None)
         else:
-            self.app.push_screen(AddScreenVariableSelection(), handle_return_from_variable_addition)
+            self.__path = path.value
+            path_leading_up_to_section = ""
+            if not self.__node.node.is_root:
+                path_leading_up_to_section: str = '.'.join(work_out_full_path(self.__node.node, [])) + "."
+            type_as_defined: tuple[Types, str] | None = self.__options.check_type(path_leading_up_to_section + path.value)
+            if type_as_defined:
+                self.app.push_screen(RecommendedTypeOrChooseType(type_as_defined),
+                                     handle_return_from_variable_addition)
+            else:
+                self.app.push_screen(AddScreenVariableSelection(), handle_return_from_variable_addition)
 
     def on_button_pressed(self):
         """If a button has been pressed then a group has been added and hence the group addition function

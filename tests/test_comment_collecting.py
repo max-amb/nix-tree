@@ -17,3 +17,11 @@ def test_yasu_example_config():
     
     comment_handler = CommentHandling(Path("./tests/example_configurations/yasu_example_config.nix"))
     assert "{3: [('# Include the results of the hardware scan.\\n', False)], 10: [('# Define your hostname.\\n', False)], 20: [('#audio', True)], 35: [('# Steam\\n', False)]}".replace("\"", '"') == str(comment_handler.get_comments_for_attaching())
+
+def test_pms_example_config():
+    """
+    Checks if all comments are collected correctly in pms_example_config.nix configuration
+    """
+
+    comment_handler = CommentHandling(Path("./tests/example_configurations/pms_example_config.nix"))
+    assert "{6: [('# Edit this configuration file to define what should be installed on', True), ('# your system.  Help is available in the configuration.nix(5) man page', True), ('# and in the NixOS manual (accessible by running `nixos-help`).', True)], 11: [('# Include the results of the hardware scan.\\n', False)], 16: [('# Use the systemd-boot EFI boot loader.', True)], 22: [('#boot.zfs.extraPools = [ \"zfstest\" ];', True)], 57: [('# badblocks\\n', False)], 97: [('#defaultSession = \"xfce+bspwm\";', True)], 110: [('# make shares visible for windows 10 clients\\n', False)]}".replace("\"", '"') == str(comment_handler.get_comments_for_attaching())
