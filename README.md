@@ -54,7 +54,8 @@ nix run 'github:max-amb/nix-tree' <your filename>
     copied over. Hence, it is simpler to require the user to enable comment copying as it leads to less confusion.
 
 ## To be implemented in the future⏭️
-- [ ] More safety rails for the user, e.g. more pattern matching in inputs
+- [x] More safety rails for the user, e.g. more pattern matching in inputs
+    - I believe this is completed now but I am happy for any issues posted showing otherwise 
 - [ ] Complete support of the basic Nix language
 - [ ] The ability to analyse flakes (e.g.`in`statements)
 
