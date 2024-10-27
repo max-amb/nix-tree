@@ -54,12 +54,17 @@ nix run 'github:max-amb/nix-tree' <your filename>
     copied over. Hence, it is simpler to require the user to enable comment copying as it leads to less confusion.
 
 ## To be implemented in the future⏭️
-- [ ] More safety rails for the user, e.g. more pattern matching in inputs
+- [x] More safety rails for the user, e.g. more pattern matching in inputs
+    - I believe this is completed now but I am happy for any issues posted showing otherwise 
 - [ ] Complete support of the basic Nix language
 - [ ] The ability to analyse flakes (e.g.`in`statements)
 
 ## Limitations
 This program obviously is not perfect, hence there are some limitations that should be taken into account by the user:
 * The program cannot currently parse the `let in` combination or any flake for that matter
+* The syntax "..." = ..., often found in home manager is not supported
+* One example that doesn't work is code that has groups inside of sections, like `[ { ... } ]`, this will break the program for now
 * ~~It may not be able to handle multiline strings often found in `extraConfig` options~~ The program can take them as input but has no way of displaying different lines or outputting different lines
 * Comments done with `/* */` aren't stored for re-attachment as they are often inside clauses
+
+## Credits
