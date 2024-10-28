@@ -24,7 +24,7 @@ def find_type(variable: str) -> Types:
         return Types.INT
     if variable in ("true", "false"):
         return Types.BOOL
-    if re.search(r"^\s*\[.*\]\s*$", variable):
+    if re.search(r"^\s*\[.*]\s*$", variable):
         return Types.LIST
     if re.search(r"^\s*(\"|'|'').*(\"|'|'')\s*$", variable):
         return Types.STRING

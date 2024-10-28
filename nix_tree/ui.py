@@ -197,10 +197,9 @@ class UI(App[list[str]]):
             ErrorComposingFileFromTree - If the regex doesn't match meaning the action is corrupted
         """
 
-        path = ""
         variable = ""
         if "[" in action: # List types
-            if match := re.search(r"(Added|Delete|Change) (.*)\[(.*)\]", action):
+            if match := re.search(r"(Added|Delete|Change) (.*)\[(.*)]", action):
                 path = match.group(2)
                 variable = "[" + match.group(3) + "]"
             else:
@@ -216,10 +215,10 @@ class UI(App[list[str]]):
             else:
                 raise ErrorComposingFileFromTree(message="Was unable to parse actions to apply to tree")
             full_path = path + variable
-        else: # True falses and uniques
+        else: # True, falses and uniques
             full_path = action.split(" ")[1]
             path = full_path.split("=")[0]
-        return (path, variable, full_path)
+        return path, variable, full_path
 
     def action_undo(self, empty_command: bool = False) -> None:
         """Performs the undo commands by popping the change from the stack and reverse engineering it
@@ -334,7 +333,7 @@ class UI(App[list[str]]):
         while self.__queue.get_len() > 0:
             action = self.__queue.dequeue().name
             if action:
-                # This section is pulling all of the data from the action such as the path of the option and the data
+                # This section is pulling all the data from the action such as the path of the option and the data
                 _, _, full_path = self.__extract_data_from_action(action)
 
                 # Performing the operations on the tree

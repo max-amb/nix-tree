@@ -68,16 +68,19 @@ class ModifyScreen(ModalScreen[str]):
         """
 
         if self.__value != new_data.value:
-            if self.__type == Types.LIST and (not re.search(r"^\s*\[[^\]]*\]\s*$", new_data.value)):
+            if self.__type == Types.LIST and (not re.search(r"^\s*\[[^]]*]\s*$", new_data.value)):
                 self.notify("You lost (or gained) a bracket! Not updating", title="error changing option", severity="error")
                 self.app.pop_screen()
-            elif self.__type == Types.STRING and (not re.search(r"^\s*'[^']*'\s*$", new_data.value)):
+            elif self.__type == Types.STRING and (
+                    (not re.search(r"^\s*'[^']*'\s*$", new_data.value)) and
+                    (not re.search(r"^\s*''[^'']*''\s*$", new_data.value))
+            ):
                 self.notify("You lost (or gained) a speech mark! Not updating", title="error changing option", severity="error")
                 self.app.pop_screen()
             else:
                 clean_input: str = re.sub(r"\"", "'", new_data.value)
                 clean_input = re.sub(r"(\[)(\s*)", "[ ", clean_input)
-                clean_input = re.sub(r"(\s*)(\])", " ]", clean_input)
+                clean_input = re.sub(r"(\s*)(])", " ]", clean_input)
                 self.__node.node.label = self.__path.split(".")[-1] + "=" + clean_input
                 if self.__node.node.data:
                     self.__node.node.data[self.__path] = clean_input

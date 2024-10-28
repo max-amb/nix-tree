@@ -274,7 +274,7 @@ class Decomposer:
             except KeyError:  # If there isn't a comment attached
                 pass
             place_to_check = 1
-            for i in range(1, len(rest_of_file_split)): # To stop empty portions lile [""] being an issue and meaning something was skipped
+            for i in range(1, len(rest_of_file_split)): # To stop empty portions like [""] being an issue and meaning something was skipped
                 if rest_of_file_split[equals_locations[iterator.equals_number][1] + i] != "":
                     place_to_check = i
                     break
@@ -354,7 +354,7 @@ class Decomposer:
         file = re.sub(r"[^\S\n]{", " { ", file)
         file = re.sub(";", " ; ", file)  # For with clauses
         file = re.sub(r"}[^\S\n]*;", "}; ", file)
-        file = re.sub(r"\][^\S\n]*;", "]; ", file)
+        file = re.sub(r"][^\S\n]*;", "]; ", file)
         file = re.sub(r'\[[^\S\n]*"', '[ "', file)
         file = re.sub(r"\[[^\S\n]*'", "[ '", file)
         file = re.sub(r"\[[^\S\n]*''", "[ ''", file)

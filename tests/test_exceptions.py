@@ -1,3 +1,4 @@
+"""Tests that the exceptions are called at the right times in the program"""
 from pathlib import Path
 import pytest
 

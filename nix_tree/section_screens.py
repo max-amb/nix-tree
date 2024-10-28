@@ -80,9 +80,9 @@ class AddScreenStringUniqueList(ModalScreen[str]):
             user_input: Input.Submitted - the choice of the user
         """
 
-        clean_input: str = re.sub(r"\"", "'", user_input.value)
+        clean_input: str = re.sub(r'"', "'", user_input.value)
         clean_input = re.sub(r"(\[)(\s*)", "[ ", clean_input)
-        clean_input = re.sub(r"(\s*)(\])", " ]", clean_input)
+        clean_input = re.sub(r"(\s*)(])", " ]", clean_input)
         self.dismiss(clean_input)
 
 
@@ -292,14 +292,17 @@ class AddScreenPath(ModalScreen[list]):
             """
 
             if data:
-                if data[1] == Types.LIST and (not re.search(r"^\s*\[[^\]]*\]\s*$", data[0])):
+                if data[1] == Types.LIST and (not re.search(r"^\s*\[[^]]*]\s*$", data[0])):
                     self.notify("You lost (or gained) a bracket! Not updating", title="error adding option",  severity="error")
                     if type_as_defined:
                         self.app.push_screen(RecommendedTypeOrChooseType(type_as_defined),
                                              handle_return_from_variable_addition)
                     else:
                         self.app.push_screen(AddScreenVariableSelection(), handle_return_from_variable_addition)
-                elif data[1] == Types.STRING and (not re.search(r"^\s*'[^']*'\s*$", data[0])):
+                elif data[1] == Types.STRING and (
+                        (not re.search(r"^\s*'[^']*'\s*$", data[0])) and
+                        (not re.search(r"^\s*''[^'']*''\s*$", data[0]))
+                ):
                     self.notify("You lost (or gained) a speech mark! Not updating", title="error adding option",  severity="error")
                     if type_as_defined:
                         self.app.push_screen(RecommendedTypeOrChooseType(type_as_defined),
@@ -322,7 +325,7 @@ class AddScreenPath(ModalScreen[list]):
             else:
                 self.app.pop_screen()
 
-        if re.search(r"[^a-zA-Z_]", path.value):
+        if re.search(r"[^a-zA-Z_.]", path.value):
             self.notify("You have entered invalid character(s) for the path of your option, not adding", title="error adding option",  severity="error")
             self.dismiss(None)
         else:
@@ -365,36 +368,29 @@ class AddScreenPath(ModalScreen[list]):
             bool - true if the function added the variable and false if otherwise
         """
         if len(path) > 1:
-            path_bit_already_exists = False
             for child in node.children:
                 if child.label.plain == path[0]:
-                    path_bit_already_exists = True
                     del path[0]
                     return self.recursive_addition(child, path, data, path_as_list, data_type)
-            if not path_bit_already_exists:
-                new_node = node.add(path[0])
-                if new_node.parent.is_root:
-                    self.__operations.append(f"Section {path[0]} added")
-                else:
-                    self.__operations.append(f"Section {'.'.join(work_out_full_path(new_node, []))} added")
-                del path[0]
-                return self.recursive_addition(new_node, path, data, path_as_list, data_type)
+            new_node = node.add(path[0])
+            if new_node.parent.is_root:
+                self.__operations.append(f"Section {path[0]} added")
+            else:
+                self.__operations.append(f"Section {'.'.join(work_out_full_path(new_node, []))} added")
+            del path[0]
+            return self.recursive_addition(new_node, path, data, path_as_list, data_type)
+
+        for child in node.children:
+            if child.label.plain.split("=")[0] == self.__path.split(".")[-1]:
+                self.notify("variable already exists", severity="error")
+                return False
+        if not path_as_list:
+            node.add_leaf(self.__path.split(".")[-1] + "=" + data,
+                          data={self.__path: data, "type": data_type})
         else:
-            var_already_exists = False
-            for child in node.children:
-                if child.label.plain.split("=")[0] == self.__path.split(".")[-1]:
-                    var_already_exists = True
-                    self.notify("variable already exists", severity="error")
-                    return False
-            if not var_already_exists:
-                if not path_as_list:
-                    node.add_leaf(self.__path.split(".")[-1] + "=" + data,
-                                  data={self.__path: data, "type": data_type})
-                else:
-                    node.add_leaf(self.__path.split(".")[-1] + "=" + data,
-                                  data={'.'.join(path_as_list) + "." + self.__path: data, "type": data_type})
-                return True
-        return None
+            node.add_leaf(self.__path.split(".")[-1] + "=" + data,
+                          data={'.'.join(path_as_list) + "." + self.__path: data, "type": data_type})
+        return True
 
     def action_quit_pressed(self) -> None:
         """Quits the screen when one of the quit buttons are pressed"""

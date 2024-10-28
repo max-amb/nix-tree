@@ -114,5 +114,3 @@ def test_work_out_full_path_example():
                 at_bottom_of_tree = True
 
         assert path == work_out_full_path(current_node, [])
-
-

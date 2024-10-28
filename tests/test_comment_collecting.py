@@ -1,3 +1,4 @@
+"""Tests the comment collecting functions for accuracy"""
 from pathlib import Path
 
 from nix_tree.decomposer import CommentHandling
@@ -14,7 +15,7 @@ def test_yasu_example_config():
     """
     Checks if all comments are collected correctly in yasu_example_config.nix configuration
     """
-    
+
     comment_handler = CommentHandling(Path("./tests/example_configurations/yasu_example_config.nix"))
     assert "{6: [('# Include the results of the hardware scan.\\n', False)], 13: [('# Define your hostname.\\n', False)], 23: [('#audio', True)], 38: [('# Steam\\n', False)]}".replace("\"", '"') == str(comment_handler.get_comments_for_attaching())
 
