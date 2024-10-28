@@ -69,3 +69,4 @@ This program obviously is not perfect, hence there are some limitations that sho
 
 ## Credits
 * The test configuration `./tests/example_configurations/pms_example_config.nix` comes from [here](https://perfectmediaserver.com/02-tech-stack/nixos/configuration.nix/)
+* The test configuration `./tests/example_configurations/yasu_example_config.nix` comes from [here](https://discourse.nixos.org/t/configuration-nix-home-nix-examples/8185)

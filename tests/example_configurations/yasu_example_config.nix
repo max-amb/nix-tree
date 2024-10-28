@@ -1,3 +1,6 @@
+/* credit: https://discourse.nixos.org/t/configuration-nix-home-nix-examples/8185
+Unmodified */
+
 { config, pkgs, ... }:
 {
   imports =

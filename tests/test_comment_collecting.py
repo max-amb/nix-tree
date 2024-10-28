@@ -16,7 +16,7 @@ def test_yasu_example_config():
     """
     
     comment_handler = CommentHandling(Path("./tests/example_configurations/yasu_example_config.nix"))
-    assert "{3: [('# Include the results of the hardware scan.\\n', False)], 10: [('# Define your hostname.\\n', False)], 20: [('#audio', True)], 35: [('# Steam\\n', False)]}".replace("\"", '"') == str(comment_handler.get_comments_for_attaching())
+    assert "{6: [('# Include the results of the hardware scan.\\n', False)], 13: [('# Define your hostname.\\n', False)], 23: [('#audio', True)], 38: [('# Steam\\n', False)]}".replace("\"", '"') == str(comment_handler.get_comments_for_attaching())
 
 def test_pms_example_config():
     """
