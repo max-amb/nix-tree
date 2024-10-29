@@ -191,7 +191,7 @@ class Decomposer:
         self.__tree.add_branch(contents=f"headers=[ {', '.join(headers)} ]")
 
     def __connecting_spaced_lines(self, file: list[str], iterator: int) -> tuple[list[str], int]:
-        if re.search(r"^''(?!.*''$).*", file[iterator]):
+        if re.search(r"^''(?!.*'').*", file[iterator]):
             j = iterator + 1
             while j < len(file):
                 file[iterator] += " " + file[j]
@@ -200,7 +200,7 @@ class Decomposer:
                     del file[j]
                     break
                 del file[j]
-        elif re.search(r'^"(?!.*"$).*', file[iterator]):
+        elif re.search(r'^"(?!.*").*', file[iterator]):
             j = iterator + 1
             while j < len(file):
                 file[iterator] += " " + file[j]
@@ -350,14 +350,14 @@ class Decomposer:
         Returns:
             file: str - the file all on one line now cleaned
         """
-        file = re.sub(r"[^\S\n]+", " ", file)
+        file = re.sub(r"[^\S\n]+", " ", file) # The [^\S\n] is my form of .*, it just excludes new lines so comment attaching can work as expected
         file = re.sub("=", " = ", file)
         file = re.sub(r"[^\S\n]}", " } ", file)
         file = re.sub(r"[^\S\n]{", " { ", file)
         file = re.sub(";", " ; ", file)  # For with clauses
         file = re.sub(r"}[^\S\n]*;", "}; ", file)
         file = re.sub(r"][^\S\n]*;", "]; ", file)
-        file = re.sub(r'\[[^\S\n]*"', '[ "', file)
+        file = re.sub(r'\[[^\S\n]*"', '[ "', file) # Looks scary because of escapes for square brackets, is simply removing and adding spaces in lists
         file = re.sub(r"\[[^\S\n]*'", "[ '", file)
         file = re.sub(r"\[[^\S\n]*''", "[ ''", file)
         file = re.sub(r"(\S*)(];)", r"\1 \2", file)

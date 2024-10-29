@@ -325,7 +325,7 @@ class AddScreenPath(ModalScreen[list]):
             else:
                 self.app.pop_screen()
 
-        if re.search(r"[^a-zA-Z_.]", path.value):
+        if re.search(r"[^a-zA-Z_.'\"]", path.value):
             self.notify("You have entered invalid character(s) for the path of your option, not adding", title="error adding option",  severity="error")
             self.dismiss(None)
         else:

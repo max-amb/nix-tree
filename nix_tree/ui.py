@@ -202,19 +202,23 @@ class UI(App[list[str]]):
         variable = ""
         path = ""
         if "[" in action: # List types
-            if match := re.search(r"(Added|Delete|Change) (.*)\[(.*)]", action):
+            if match := re.search(r"(Added|Delete|Change) (.*)\[(.*)]( type: Types.(STRING|BOOL|UNIQUE|LIST|INT))?$", action):
                 path = match.group(2)[:-1]
                 variable = "[" + match.group(3) + "]"
             else:
                 raise ErrorComposingFileFromTree(message="Was unable to parse actions to apply to tree")
             full_path = path + "=" + variable
         elif "'" in action: # Any of the string types
-            if match := re.search(r"(Added|Delete|Change) (.*)''(.*)''", action):
+            if match := re.search(r"(Added|Delete|Change) (.*)''(.*?)''( type: Types.(STRING|BOOL|UNIQUE|LIST|INT))?$", action):
                 path = match.group(2)[:-1]
                 variable = "''" + match.group(3) + "''"
-            elif match := re.search(r"(Added|Delete|Change) (.*)'(.*)'", action):
+            elif match := re.search(r"(Added|Delete|Change) (.*)'(.*?)'( type: Types.(STRING|BOOL|UNIQUE|LIST|INT))?$", action):
+                # The 3rd group is non greedy to make a.'b'.c = 'x' paths work
                 path = match.group(2)[:-1]
                 variable = "'" + match.group(3) + "'"
+            elif match := re.search(r"(Added|Delete|Change) (.*)=(.*)( type: Types.(STRING|BOOL|UNIQUE|LIST|INT))?$", action): # String path but not string var like a.'b'.c = true
+                path = match.group(2)
+                variable = match.group(3)
             else:
                 raise ErrorComposingFileFromTree(message="Was unable to parse actions to apply to tree")
             full_path = path + "=" + variable
@@ -236,9 +240,9 @@ class UI(App[list[str]]):
                 self.query_one("#operations_stack", ListView).pop(0)
             action: str | None = self.__stack.pop().name
             if action:
-                path, variable, full_path = self.__extract_data_from_action(action)
                 match action.split(" ")[0]:
                     case "Delete":
+                        path, variable, full_path = self.__extract_data_from_action(action)
                         var_type = None
                         match action.split(" ")[-1]:
                             case "Types.LIST":
@@ -262,6 +266,7 @@ class UI(App[list[str]]):
                         else:
                             raise TypeError("Cannot deduce node variable type")
                     case "Added":
+                        path, variable, full_path = self.__extract_data_from_action(action)
                         node_to_delete: UIVariableNode | None = self.recursive_searching_for_var(
                             self.query_one(Tree).root,
                             path.split("."),
@@ -272,6 +277,7 @@ class UI(App[list[str]]):
                         else:
                             raise NodeNotFound(node_name=full_path)
                     case "Change":
+                        path, variable, full_path = self.__extract_data_from_action(action)
                         change_command: str = action[7:]  # Can't use space splits as it changes the lists spaces
                         pre: list = change_command.split("->")[0].strip().split("=")
                         post: list = change_command.split("->")[1].strip().split("=")
@@ -335,14 +341,14 @@ class UI(App[list[str]]):
         while self.__queue.get_len() > 0:
             action = self.__queue.dequeue().name
             if action:
-                # This section is pulling all the data from the action such as the path of the option and the data
-                _, _, full_path = self.__extract_data_from_action(action)
 
                 # Performing the operations on the tree
                 match action.split(" ")[0]:
                     case "Added":
+                        _, _, full_path = self.__extract_data_from_action(action)
                         tree.add_branch(full_path)
                     case "Delete":
+                        _, _, full_path = self.__extract_data_from_action(action)
                         parent: Node | None = tree.find_node_parent(full_path, tree.get_root())
                         if parent:
                             if isinstance(parent, ConnectorNode):
@@ -352,6 +358,7 @@ class UI(App[list[str]]):
                         else:
                             raise NodeNotFound(node_name=full_path)
                     case "Change":
+                        _, _, full_path = self.__extract_data_from_action(action)
                         change_command: str = action[7:]
                         pre: str = change_command.split("->")[0].strip()
                         post: str = change_command.split("->")[1].strip()

@@ -65,7 +65,7 @@ nix run 'github:max-amb/nix-tree' <your filename>
 ## Limitations
 This program obviously is not perfect, hence there are some limitations that should be taken into account by the user:
 * The program cannot currently parse the `let in` combination or any flake for that matter
-* The syntax "..." = ..., often found in home manager is not supported
+* ~~The syntax "..." = ..., often found in home manager is not supported~~ Now is after some more complex regex matching
 * One example that doesn't work is code that has groups inside of sections, like `[ { ... } ]`, this will break the program for now
 * ~~It may not be able to handle multiline strings often found in `extraConfig` options~~ The program can take them as input but has no way of displaying different lines or outputting different lines
 * Comments done with `/* */` aren't stored for re-attachment as they are often inside clauses
@@ -73,3 +73,4 @@ This program obviously is not perfect, hence there are some limitations that sho
 ## Credits
 * The test configuration `./tests/example_configurations/pms_example_config.nix` comes from [here](https://perfectmediaserver.com/02-tech-stack/nixos/configuration.nix/)
 * The test configuration `./tests/example_configurations/yasu_example_config.nix` comes from [here](https://discourse.nixos.org/t/configuration-nix-home-nix-examples/8185)
+* The test configuration `./tests/example_configurations/shortened_default.nix` comes from the default nix configuration
