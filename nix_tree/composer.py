@@ -1,6 +1,7 @@
 """contains the composer which builds the file"""
 
 import re
+import os
 from dataclasses import dataclass
 
 from nix_tree.errors import NoValidHeadersNode, ErrorComposingFileFromTree
@@ -31,10 +32,14 @@ class Composer:
         """
 
         self.__tree = tree
-        if write_over:
-            self.__file_location = file_location
+        if os.access(file_location, os.W_OK):
+            if write_over:
+                self.__file_location = file_location
+            else:
+                self.__file_location = file_location + ".new"
         else:
-            self.__file_location = file_location + ".new"
+            print("\033[93m No permission to write to the file/directory containing the original file, writing to current directory instead \033[91m")
+            self.__file_location = os.getcwd() + "/" + file_location.split("/")[-1:][0]
         self.__composer_iterator = ComposerIterator()
         self.__write_to_file(comments)
 

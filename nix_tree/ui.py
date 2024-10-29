@@ -207,7 +207,7 @@ class UI(App[list[str]]):
                 variable = "[" + match.group(3) + "]"
             else:
                 raise ErrorComposingFileFromTree(message="Was unable to parse actions to apply to tree")
-            full_path = path + variable
+            full_path = path + "=" + variable
         elif "'" in action: # Any of the string types
             if match := re.search(r"(Added|Delete|Change) (.*)''(.*)''", action):
                 path = match.group(2)[:-1]
@@ -217,7 +217,7 @@ class UI(App[list[str]]):
                 variable = "'" + match.group(3) + "'"
             else:
                 raise ErrorComposingFileFromTree(message="Was unable to parse actions to apply to tree")
-            full_path = path + variable
+            full_path = path + "=" + variable
         else: # bool and unique
             full_path = action.split(" ")[1]
             path = full_path.split("=")[0]
