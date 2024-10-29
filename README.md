@@ -17,6 +17,9 @@ nix = {
 ```nix
 nix.settings.experimental-features = [ "nix-command" "flakes" ];
 ```
+> [!NOTE]  
+> Ensure you run the respective rebuild command after making these changes for them to take effect!
+
 * Finally, if you just want to enable it on a command-by-command basis append `--experimental-features 'nix-command flakes'` to every command
 
 #### Building and running the program 👷
