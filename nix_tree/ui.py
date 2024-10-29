@@ -195,27 +195,31 @@ class UI(App[list[str]]):
 
         Raises:
             ErrorComposingFileFromTree - If the regex doesn't match meaning the action is corrupted
+
+        Note:
+            The [:-1] in all of the path's is to remove the equals at the end!
         """
 
         variable = ""
+        path = ""
         if "[" in action: # List types
             if match := re.search(r"(Added|Delete|Change) (.*)\[(.*)]", action):
-                path = match.group(2)
+                path = match.group(2)[:-1]
                 variable = "[" + match.group(3) + "]"
             else:
                 raise ErrorComposingFileFromTree(message="Was unable to parse actions to apply to tree")
             full_path = path + variable
         elif "'" in action: # Any of the string types
             if match := re.search(r"(Added|Delete|Change) (.*)''(.*)''", action):
-                path = match.group(2)
+                path = match.group(2)[:-1]
                 variable = "''" + match.group(3) + "''"
             elif match := re.search(r"(Added|Delete|Change) (.*)'(.*)'", action):
-                path = match.group(2)
+                path = match.group(2)[:-1]
                 variable = "'" + match.group(3) + "'"
             else:
                 raise ErrorComposingFileFromTree(message="Was unable to parse actions to apply to tree")
             full_path = path + variable
-        else: # True, falses and uniques
+        else: # bool and unique
             full_path = action.split(" ")[1]
             path = full_path.split("=")[0]
         return path, variable, full_path
@@ -259,7 +263,6 @@ class UI(App[list[str]]):
                         else:
                             raise TypeError("Cannot deduce node variable type")
                     case "Added":
-                        variable = full_path.split("=")[1]
                         node_to_delete: UIVariableNode | None = self.recursive_searching_for_var(
                             self.query_one(Tree).root,
                             path.split("."),
@@ -459,7 +462,6 @@ class UI(App[list[str]]):
         Returns:
             UIVariableNode - the found variable node
         """
-
         if len(path) > 1:
             for child in node.children:
                 if str(child.label) == path[0]:
