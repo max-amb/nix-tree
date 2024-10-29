@@ -301,6 +301,8 @@ class Decomposer:
                     for phrase_itr in range(equals_locations[iterator.equals_number][1] + place_to_check + 4, len(rest_of_file_without_lines)):
                         if rest_of_file_split[phrase_itr] == "];":
                             break
+                        if re.search(r"^\s*$", rest_of_file_split[phrase_itr]):
+                            continue
                         in_the_brackets.append(f"({rest_of_file_split[equals_locations[iterator.equals_number][1] + place_to_check + 1]}"
                                                f").{rest_of_file_split[phrase_itr]}")
                     self.__tree.add_branch(f"{iterator.prepend}[ {' '.join(in_the_brackets)} ]")
