@@ -2,7 +2,6 @@
 
 import subprocess
 from pathlib import Path
-from time import sleep
 import re
 
 from textual.app import App, ComposeResult
@@ -625,7 +624,8 @@ def start_ui(file_location: str, write_over: bool, comments: bool) -> None:
         # If command is an actual command it will be executed, otherwise it is a list of operations for the composer to use in the edit the file option
         if any(substring in ' '.join(command) for substring in ["sudo", "home-manager", "activate"]):
             subprocess.run(command, check=True)  # To error out if the command fails
-            sleep(5)
+            _ = input("Command succesful, press enter to continue...\n") # Just to force the user to press enter we don't care what they input
+            # We know the command was succesful because otherwise the subprocess run line would have failed!
             start_ui(file_location, write_over, comments)
         else:
             Composer(decomposer.get_tree(), file_location, write_over, comments)
