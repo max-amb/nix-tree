@@ -545,7 +545,7 @@ class UI(App[list[str]]):
 
             self.app.exit(cmd)
 
-        if choice.option_list.id in ("system-switch-options", "home-manager-gens"):
+        if choice.option_list.id in ("system-build-options", "home-manager-gens"):
             match choice.option.prompt:
                 case "switch":
                     self.app.exit("sudo nixos-rebuild switch".split())
