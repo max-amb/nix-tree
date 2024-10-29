@@ -609,7 +609,7 @@ class UI(App[list[str]]):
                                 yield Button(label="switch", variant="success", id="switch_hm")
                                 yield Button(label="build", id="build_hm")
                         except subprocess.CalledProcessError: # If the user does not have home manager installed
-                            yield Static("Home manager options unavailable")
+                            yield Static("Home manager options unavailable - first install home-manager!")
             with TabPane(title="operations stack", id="operations_stack_tab"):
                 yield ListView(id="operations_stack")
         yield Header(name="Nix tree", show_clock=True, icon=" ")
