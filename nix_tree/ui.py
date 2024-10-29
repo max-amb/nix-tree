@@ -163,7 +163,7 @@ class UI(App[list[str]]):
             options_location = options_location / "data/options.json"
         else: # If it is not being run as a flake
             for i in path_of_executable:
-                if i == "nix_tree":
+                if i == "nix-tree":
                     options_location = options_location / i
                     break
                 options_location = options_location / i
@@ -602,7 +602,7 @@ class UI(App[list[str]]):
                     with TabPane(title="Home Manager"):
                         try:
                             generation_command = subprocess.run("home-manager generations".split(), capture_output=True,
-                                                            text=True, check=True)
+                                                            text=True, check=True, shell=True)
                             yield OptionList(*generation_command.stdout.split("\n")[:-1], id="home-manager-gens")
                             yield OptionList(*generation_command.stdout.split("\n")[:-1], id="home-manager-gens")
                             with Horizontal(id="buttons"):
