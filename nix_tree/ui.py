@@ -7,7 +7,7 @@ import re
 from textual.app import App, ComposeResult
 from textual.containers import Horizontal, Vertical, Center
 from textual.screen import ModalScreen
-from textual.widgets import Label, ListView, ListItem, OptionList, Tree, Header, Footer, TabbedContent, \
+from textual.widgets import Label, ListView, ListItem, OptionList, Static, Tree, Header, Footer, TabbedContent, \
     TabPane, Button
 
 from nix_tree.composer import Composer
@@ -600,12 +600,16 @@ class UI(App[list[str]]):
                             id="system-build-options"
                         )
                     with TabPane(title="Home Manager"):
-                        generation_command = subprocess.run("home-manager generations".split(), capture_output=True,
+                        try:
+                            generation_command = subprocess.run("home-manager generations".split(), capture_output=True,
                                                             text=True, check=True)
-                        yield OptionList(*generation_command.stdout.split("\n")[:-1], id="home-manager-gens")
-                        with Horizontal(id="buttons"):
-                            yield Button(label="switch", variant="success", id="switch_hm")
-                            yield Button(label="build", id="build_hm")
+                            yield OptionList(*generation_command.stdout.split("\n")[:-1], id="home-manager-gens")
+                            yield OptionList(*generation_command.stdout.split("\n")[:-1], id="home-manager-gens")
+                            with Horizontal(id="buttons"):
+                                yield Button(label="switch", variant="success", id="switch_hm")
+                                yield Button(label="build", id="build_hm")
+                        except subprocess.CalledProcessError: # If the user does not have home manager installed
+                            yield Static("Home manager options unavailable")
             with TabPane(title="operations stack", id="operations_stack_tab"):
                 yield ListView(id="operations_stack")
         yield Header(name="Nix tree", show_clock=True, icon=" ")
