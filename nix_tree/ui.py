@@ -622,6 +622,8 @@ class UI(App[list[str]]):
         yield Header(name="Nix tree", show_clock=True, icon=" ")
         yield Footer()
 
+    def on_mount(self) -> None:
+        self.title = "Nix tree"
 
 def start_ui(file_location: str, write_over: bool, comments: bool) -> None:
     """Makes a DecomposerTree object along with calling the decomposer object to fill the tree, it then passes it into
