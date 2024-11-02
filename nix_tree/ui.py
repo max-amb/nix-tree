@@ -619,7 +619,7 @@ class UI(App[list[str]]):
                             yield Static("Home manager options unavailable - first install home-manager!")
             with TabPane(title="operations stack", id="operations_stack_tab"):
                 yield ListView(id="operations_stack")
-        yield Header(name="Nix tree", show_clock=True, icon=" ")
+        yield Header(name="Nix tree")
         yield Footer()
 
     def on_mount(self) -> None:

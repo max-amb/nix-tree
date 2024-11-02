@@ -18,10 +18,6 @@
           type = "app";
           projectDir = ./.;
 
-          nativeBuildInputs = [
-            pkgs.inconsolata-nerdfont
-          ];
-
           # To copy over the full options json
           preInstall = ''
             mkdir -p $out/data
