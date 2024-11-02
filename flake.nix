@@ -18,7 +18,7 @@
           type = "app";
           projectDir = ./.;
 
-          buildInputs = [
+          nativeBuildInputs = [
             pkgs.inconsolata-nerdfont
           ];
 
