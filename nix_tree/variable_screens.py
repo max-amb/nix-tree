@@ -168,7 +168,7 @@ class OptionsScreen(ModalScreen[str]):
         elif button.button.id == "delete":
             self.__node.node.remove()
             if self.__node.node.data:
-                self.dismiss(f"Delete {self.__path}={self.__value} with type {self.__type}")
+                self.dismiss(f"Delete {self.__path}={self.__value} type: {self.__type}")
         else:
             def save_modify_changes(changes_made: str | None) -> None:
                 if changes_made:
