@@ -1,4 +1,4 @@
-"""Defines two custom types for use in the ui mostly"""
+"""Defines two custom types for use in the ui"""
 
 # Need to import Tree to import _tree
 from textual.widgets import Tree, _tree

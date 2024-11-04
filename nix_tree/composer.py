@@ -1,4 +1,4 @@
-"""contains the composer which builds the file"""
+"""The composer builds the output file if the user applies their changes"""
 
 import re
 import os
@@ -9,6 +9,7 @@ from nix_tree.decomposer import DecomposerTree
 from nix_tree.tree import VariableNode, ConnectorNode, Node
 from nix_tree.parsing import Types
 
+
 @dataclass
 class ComposerIterator:
     """An iterator that composer uses to build the file"""
@@ -17,6 +18,7 @@ class ComposerIterator:
     previous_prepend: str = ""
     lines: str = ""
     previous_addition: str = ""
+
 
 class Composer:
     """The class which contains the functionality to output the edited tree"""
@@ -68,7 +70,7 @@ class Composer:
         comment_for_after = ""
         if node.get_comments():
             for comment in node.get_comments():
-                if comment[1]: # Need to insert above current line
+                if comment[1]:  # Need to insert above current line
                     before_comment = self.__composer_iterator.lines.split("\n")[:-1]
                     post_comment = self.__composer_iterator.lines.split("\n")[-1]
                     before_comment_str = '\n'.join(before_comment) + "\n" + self.__composer_iterator.prepend + comment[0]

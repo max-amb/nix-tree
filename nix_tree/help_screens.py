@@ -12,6 +12,8 @@ MAINHELPTEXT = """\
 - Enter: To modify a variable or fold an indent
 - q/Esc : To close this help dialog
 
+Note: if in a list there it looks like (xy).z,
+it means that xy is used in a with clause!
 """
 
 # The help text for the options menu
@@ -33,10 +35,11 @@ SECTIONOPTIONSHELPTEXT = """\
 - Tab: To switch between buttons
 - Enter: To select one of the buttons
 - q/Esc: To close this help dialog or the options dialog
-- Delete: To delete that section 
-- Add: To add a variable/section 
+- Delete: To delete that section
+- Add: To add a variable/section
 - Exit: To close the options dialog
 """
+
 
 class HelpScreen(ModalScreen):
     """The outline for a help screen in the app"""

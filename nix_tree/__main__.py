@@ -1,4 +1,4 @@
-"""Starts the UI"""
+"""Handles user command line interaction"""
 
 import argparse
 from pathlib import Path
@@ -6,12 +6,13 @@ from pathlib import Path
 from nix_tree.ui import start_ui
 from nix_tree.errors import ConfigurationFileNotFound
 
+
 def main():
     """Parses the arguments to the tool and passes it on to the rest of the code"""
 
     parser = argparse.ArgumentParser(prog="nix-tree",
                                      description="A tool for viewing and editing your nix configuration as a tree")
-    parser.add_argument("file_location", type=str, default="/home/max/nea/NEA/configuration.nix",
+    parser.add_argument("file_location", type=str,
                         help="The location of your nix configuration file")
     parser.add_argument("-w", "--writeover", default=False, action="store_true",
                         help="Write over the file that you are editing")

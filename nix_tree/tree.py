@@ -1,4 +1,5 @@
-"""Contains the tree implementation"""
+"""Contains the tree used to store the decomposed file"""
+
 import re
 
 from nix_tree.custom_types import UIConnectorNode
@@ -36,7 +37,7 @@ class Node:
 
     def __init__(self, name: str) -> None:
         """Sets the name of the node
-        
+
         Args:
             name: str - the name to be set
         """
@@ -70,7 +71,7 @@ class Node:
         """
         return []
 
-    def set_comments(self, comments: list[tuple[str,bool]]) -> None:
+    def set_comments(self, comments: list[tuple[str, bool]]) -> None:
         """To set the comments of the current node
 
         Args:
@@ -79,7 +80,7 @@ class Node:
 
         self.__comments = comments
 
-    def get_comments(self) -> list[tuple[str,bool]]:
+    def get_comments(self) -> list[tuple[str, bool]]:
         """To get the comments of the current node
 
         Returns:
@@ -89,6 +90,7 @@ class Node:
         if self.__comments:
             return self.__comments
         return []
+
 
 class ConnectorNode(Node):
     """The connector node, it is a part of the path
@@ -142,7 +144,7 @@ class ConnectorNode(Node):
         raise NodeNotFound(full_path)
 
     def remove_child_section_node(self, name: str) -> None:
-        """Given a section nodes name, this method removes the section node from 
+        """Given a section nodes name, this method removes the section node from
         the current nodes children
 
         Args:
@@ -179,7 +181,7 @@ class VariableNode(Node):
         self.__data = data
 
     def get_type(self) -> Types:
-        """Returns the data type of the variable 
+        """Returns the data type of the variable
 
         Returns:
             Types - the data type of the variable
@@ -236,7 +238,7 @@ class DecomposerTree:
             contents: str - the variables full path
         """
 
-        if contents.count("=") >= 2: # To account for having equals in strings
+        if contents.count("=") >= 2:  # To account for having equals in strings
             equals_splits = contents.split("=")
             string_path = equals_splits[0]
             del equals_splits[0]

@@ -313,7 +313,7 @@ class AddScreenPath(ModalScreen[list]):
                     path_as_list = work_out_full_path(self.__node.node, [])
                     if data[1]:
                         node_added = self.recursive_addition(self.__node.node, path.value.split("."), data[0], path_as_list,
-                                                         data[1])
+                                                             data[1])
                     else:
                         raise TypeError("The nodes type could not be determined")
                     if node_added:

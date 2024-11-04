@@ -1,4 +1,4 @@
-"""Stores the parsing class for options checking"""
+"""Stores the parsing class to operate upon the options.json"""
 
 import json
 from enum import Enum

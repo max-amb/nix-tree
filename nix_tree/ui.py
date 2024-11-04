@@ -1,4 +1,4 @@
-"""Ui"""
+"""The main UI file which contains all the main screens such as the tree or operations stack"""
 
 import subprocess
 from pathlib import Path
@@ -20,6 +20,7 @@ from nix_tree.stacks import OperationsStack, OperationsQueue
 from nix_tree.tree import VariableNode, ConnectorNode, Node
 from nix_tree.variable_screens import OptionsScreen
 from nix_tree.section_screens import SectionOptionsScreen
+
 
 class QueueScreen(ModalScreen[bool]):
     """The screen where the user can choose to apply their changes to the file or not"""
@@ -155,13 +156,13 @@ class UI(App[list[str]]):
         # the location of the options file.
         path_of_executable = Path(__file__).parts
         options_location = Path()
-        if 'store' in path_of_executable: # If it is being run as a flake
+        if 'store' in path_of_executable:  # If it is being run as a flake
             for i in path_of_executable:
                 if i == "lib":
                     break
                 options_location = options_location / i
             options_location = options_location / "data/options.json"
-        else: # If it is not being run as a flake
+        else:  # If it is not being run as a flake
             for i in path_of_executable:
                 if i == "nix-tree":
                     options_location = options_location / i
@@ -199,16 +200,15 @@ class UI(App[list[str]]):
             The [:-1] in all of the path's is to remove the equals at the end!
         """
 
-        variable = ""
-        path = ""
-        if "[" in action: # List types
+        variable = ""  # path will always be defined
+        if "[" in action:  # List types
             if match := re.search(r"(Added|Delete|Change) (.*)\[(.*)]( type: Types.(STRING|BOOL|UNIQUE|LIST|INT))?$", action):
                 path = match.group(2)[:-1]
                 variable = "[" + match.group(3) + "]"
             else:
                 raise ErrorComposingFileFromTree(message="Was unable to parse actions to apply to tree")
             full_path = path + "=" + variable
-        elif "'" in action: # Any of the string types
+        elif "'" in action:  # Any of the string types
             if match := re.search(r"(Added|Delete|Change) (.*)''(.*?)''( type: Types.(STRING|BOOL|UNIQUE|LIST|INT))?$", action):
                 path = match.group(2)[:-1]
                 variable = "''" + match.group(3) + "''"
@@ -216,13 +216,14 @@ class UI(App[list[str]]):
                 # The 3rd group is non greedy to make a.'b'.c = 'x' paths work
                 path = match.group(2)[:-1]
                 variable = "'" + match.group(3) + "'"
-            elif match := re.search(r"(Added|Delete|Change) (.*)=(.*)( type: Types.(STRING|BOOL|UNIQUE|LIST|INT))?$", action): # String path but not string var like a.'b'.c = true
+            elif match := re.search(r"(Added|Delete|Change) (.*)=(.*)( type: Types.(STRING|BOOL|UNIQUE|LIST|INT))?$", action):
+                # String path but not string var like a.'b'.c = true
                 path = match.group(2)
                 variable = match.group(3)
             else:
                 raise ErrorComposingFileFromTree(message="Was unable to parse actions to apply to tree")
             full_path = path + "=" + variable
-        else: # bool and unique
+        else:  # bool and unique
             full_path = action.split(" ")[1]
             path = full_path.split("=")[0]
         return path, variable, full_path
@@ -236,7 +237,7 @@ class UI(App[list[str]]):
         """
 
         if self.__stack.get_len() > 0:
-            if not empty_command: # To make the empty functionality more efficient we clear it all at once elsewhere
+            if not empty_command:  # To make the empty functionality more efficient we clear it all at once elsewhere
                 self.query_one("#operations_stack", ListView).pop(0)
             action: str | None = self.__stack.pop().name
             if action:
@@ -277,7 +278,6 @@ class UI(App[list[str]]):
                         else:
                             raise NodeNotFound(node_name=full_path)
                     case "Change":
-                        path, variable, full_path = self.__extract_data_from_action(action)
                         change_command: str = action[7:]  # Can't use space splits as it changes the lists spaces
                         pre: list = change_command.split("->")[0].strip().split("=")
                         post: list = change_command.split("->")[1].strip().split("=")
@@ -364,7 +364,8 @@ class UI(App[list[str]]):
                         post: str = change_command.split("->")[1].strip()
                         node_to_edit: Node = tree.find_variable_node(pre, tree.get_root())
                         if isinstance(node_to_edit, VariableNode):
-                            if match := re.search(r"^(.*?)=(.*)$", post.strip()): # Question mark makes the match not greedy meaning it matches as few chars as possible
+                            if match := re.search(r"^(.*?)=(.*)$", post.strip()):
+                                # Question mark makes the match not greedy meaning it matches as few chars as possible
                                 node_to_edit.set_data(match.group(2))
                             else:
                                 raise ErrorComposingFileFromTree(message="Invalid change command, please create an issue on github")
@@ -609,13 +610,12 @@ class UI(App[list[str]]):
                     with TabPane(title="Home Manager"):
                         try:
                             generation_command = subprocess.run("home-manager generations".split(), capture_output=True,
-                                                            text=True, check=True, shell=True)
-                            yield OptionList(*generation_command.stdout.split("\n")[:-1], id="home-manager-gens")
+                                                                text=True, check=True)
                             yield OptionList(*generation_command.stdout.split("\n")[:-1], id="home-manager-gens")
                             with Horizontal(id="buttons"):
                                 yield Button(label="switch", variant="success", id="switch_hm")
                                 yield Button(label="build", id="build_hm")
-                        except subprocess.CalledProcessError: # If the user does not have home manager installed
+                        except subprocess.CalledProcessError:  # If the user does not have home manager installed
                             yield Static("Home manager options unavailable - first install home-manager!")
             with TabPane(title="operations stack", id="operations_stack_tab"):
                 yield ListView(id="operations_stack")
@@ -623,7 +623,10 @@ class UI(App[list[str]]):
         yield Footer()
 
     def on_mount(self) -> None:
+        """sets the title of the page to Nix tree"""
+
         self.title = "Nix tree"
+
 
 def start_ui(file_location: str, write_over: bool, comments: bool) -> None:
     """Makes a DecomposerTree object along with calling the decomposer object to fill the tree, it then passes it into
@@ -637,7 +640,7 @@ def start_ui(file_location: str, write_over: bool, comments: bool) -> None:
         # If command is an actual command it will be executed, otherwise it is a list of operations for the composer to use in the edit the file option
         if any(substring in ' '.join(command) for substring in ["sudo", "home-manager", "activate"]):
             subprocess.run(command, check=True)  # To error out if the command fails
-            _ = input("Command succesful, press enter to continue...\n") # Just to force the user to press enter we don't care what they input
+            _ = input("Command succesful, press enter to continue...\n")  # Just to force the user to press enter we don't care what they input
             # We know the command was succesful because otherwise the subprocess run line would have failed!
             start_ui(file_location, write_over, comments)
         else:

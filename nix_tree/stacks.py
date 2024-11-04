@@ -1,8 +1,9 @@
 """Contains the stacks and queue implementations used in throughout the program
 
 Note:
-    Inheritance is useless due to all the stacks being of different data types
+    Inheritance is useless due to all the stacks being of different data types by design, to avoid confusion
 """
+
 from textual.widgets import ListItem
 
 

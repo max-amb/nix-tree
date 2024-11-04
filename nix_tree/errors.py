@@ -12,6 +12,7 @@ class NodeNotFound(Exception):
     def __init__(self, node_name: str, message: str = "Node {NODE} does not exist in the tree"):
         super().__init__(message.format(NODE=node_name))
 
+
 class NoValidHeadersNode(Exception):
     """Raised if no valid headers are found by the composer
 
@@ -20,6 +21,7 @@ class NoValidHeadersNode(Exception):
     """
     def __init__(self, message: str = "Could not find any valid headers nodes to start outputting the tree") -> None:
         super().__init__(message)
+
 
 class ErrorComposingFileFromTree(Exception):
     """Raised if there is an error outputting/composing the tree
@@ -30,8 +32,10 @@ class ErrorComposingFileFromTree(Exception):
     def __init__(self, message: str = "An error was encountered composing the file from the tree") -> None:
         super().__init__(message)
 
+
 class ConfigurationFileNotFound(Exception):
     """Raised if no configuration file is found to edit/read"""
+
 
 class ErrorHandlingComments(Exception):
     """Raised if there was an error with comment management

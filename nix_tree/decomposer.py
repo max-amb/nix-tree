@@ -1,4 +1,5 @@
-"""The module containing the decomposer"""
+"""The decomposer decomposes the file into tokes and passes them into the tree"""
+
 from dataclasses import dataclass
 from pathlib import Path
 import re
@@ -14,6 +15,7 @@ class Iterator:
     equals_number: int = 0
     prepend: str = ""
     previous_prepend: str = ""
+
 
 class CommentHandling:
     """Class to handle the comments in a Nix file"""
@@ -116,12 +118,13 @@ class CommentHandling:
 
         return self.__comments
 
+
 class Decomposer:
     """Class to handle the decomposition of the Nix file and addition of tokens to the tree"""
 
     def __init__(self, file_path: Path, tree: DecomposerTree) -> None:
         """Takes in file path and stores it for the main decomposition function
-        
+
         Args:
             file_path: Path - The file path for the Nix configuration file
             tree: DecomposerTree - The tree that decomposer should add to
@@ -224,7 +227,7 @@ class Decomposer:
         rest_of_file_split: list = file.split(" ")
         i = 0
         while True:
-            if i < len(rest_of_file_split): # Doing it like this because the length changes every time
+            if i < len(rest_of_file_split):  # Doing it like this because the length changes every time
                 rest_of_file_split, i = self.__connecting_spaced_lines(rest_of_file_split, i)
                 i += 1
             else:
@@ -268,13 +271,13 @@ class Decomposer:
                 comment_list: list[tuple[str, bool]] = comments.pop(equals_locations[iterator.equals_number][2])
                 comments_attached_to_id.update({
                     self.__checking_group(groups, equals_locations[iterator.equals_number][0]) +
-                    rest_of_file_split[equals_locations[iterator.equals_number][1] - 1] :
+                    rest_of_file_split[equals_locations[iterator.equals_number][1] - 1]:
                     comment_list
                 })
             except KeyError:  # If there isn't a comment attached
                 pass
             place_to_check = 1
-            for i in range(1, len(rest_of_file_split)): # To stop empty portions like [""] being an issue and meaning something was skipped
+            for i in range(1, len(rest_of_file_split)):  # To stop empty portions like [""] being an issue and meaning something was skipped
                 if rest_of_file_split[equals_locations[iterator.equals_number][1] + i] != "":
                     place_to_check = i
                     break
@@ -350,14 +353,14 @@ class Decomposer:
         Returns:
             file: str - the file all on one line now cleaned
         """
-        file = re.sub(r"[^\S\n]+", " ", file) # The [^\S\n] is my form of .*, it just excludes new lines so comment attaching can work as expected
+        file = re.sub(r"[^\S\n]+", " ", file)  # The [^\S\n] is my form of .*, it just excludes new lines so comment attaching can work as expected
         file = re.sub("=", " = ", file)
         file = re.sub(r"[^\S\n]}", " } ", file)
         file = re.sub(r"[^\S\n]{", " { ", file)
         file = re.sub(";", " ; ", file)  # For with clauses
         file = re.sub(r"}[^\S\n]*;", "}; ", file)
         file = re.sub(r"][^\S\n]*;", "]; ", file)
-        file = re.sub(r'\[[^\S\n]*"', '[ "', file) # Looks scary because of escapes for square brackets, is simply removing and adding spaces in lists
+        file = re.sub(r'\[[^\S\n]*"', '[ "', file)  # Looks scary because of escapes for square brackets, is simply removing and adding spaces in lists
         file = re.sub(r"\[[^\S\n]*'", "[ '", file)
         file = re.sub(r"\[[^\S\n]*''", "[ ''", file)
         file = re.sub(r"(\S*)(];)", r"\1 \2", file)
@@ -478,7 +481,7 @@ class Decomposer:
             char_count += len(line)
         return equals_locations
 
-    def __add_comments_to_nodes(self, node: Node, prepend: str, comments: dict[str, list[tuple[str,bool]]]):
+    def __add_comments_to_nodes(self, node: Node, prepend: str, comments: dict[str, list[tuple[str, bool]]]):
         """Adds the comment lists to their respective nodes
 
         Args:
