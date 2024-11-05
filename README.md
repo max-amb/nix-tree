@@ -41,6 +41,23 @@ nix run 'github:max-amb/nix-tree' <your filename>
 * The screen you see when you select a section:
 ![Section screen](./screenshots/section_screen.png)
 
+## The options.json file ⚙️
+In the data directory there is an `options.json` file.
+This file contains the valid Nixos options, for example, if in the program you added option `programs.firefox.enable`, the program would check the `options.json` and would be able to deduce that `programs.firefox.enable` is a boolean.
+This means that it can recommend the correct type for a variable to a new user.
+The one provided in this repo was generated on the 5th of November 2024.
+
+You are of course able to generate your own `options.json` from your NixOS system using:
+```bash
+nix-build '<nixpkgs/nixos/release.nix>' -A options
+```
+> [!WARNING]
+> Make sure to place the `options.json` in the same place as it is found now (in `./data`).
+
+This command works by selecting the options attribute, `-A options`, to build using `nix-build`.
+It also tells `nix-build` where to find a file that can build `options.json`, which is found in `<nixpkgs/nixos/release.nix>` (the angular brackets format is telling `nix-build` to look in the `NIX_PATH` environment variable).
+Thanks to [Ryan Hendrickson](https://discourse.nixos.org/u/rhendric/summary) for explaining this on this NixOS discourse [here](https://discourse.nixos.org/t/list-available-services-and-their-options/6123/16)
+
 ## FAQ ❓
 * Q: Is there a tutorial/guide on how to use the program?
     * A: There is help screens on most of the screens which can be accessed by pressing ?.
