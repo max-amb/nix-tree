@@ -8,7 +8,7 @@ from textual.app import App, ComposeResult
 from textual.containers import Horizontal, Vertical, Center
 from textual.screen import ModalScreen
 from textual.widgets import Label, ListView, ListItem, OptionList, Static, Tree, Header, Footer, TabbedContent, \
-    TabPane, Button
+    TabPane, Button, Collapsible
 
 from nix_tree.composer import Composer
 from nix_tree.custom_types import UIVariableNode, UIConnectorNode
@@ -90,6 +90,8 @@ class HomeManagerGenerationScreen(ModalScreen[list[str]]):
         """
 
         self.__title = title
+        self.__activate_already_clicked: bool = False
+        self.__remove_already_clicked: bool = False
         super().__init__()
 
     def on_button_pressed(self, choice: Button.Pressed):
@@ -101,9 +103,23 @@ class HomeManagerGenerationScreen(ModalScreen[list[str]]):
 
         match choice.button.id:
             case "activate":
-                self.dismiss(f"{self.__title.split()[-1]}/activate".split())
+                if not self.__activate_already_clicked:
+                    self.notify(title="Switching home manager configuration",
+                                message="Please note this will switch system configuration to the selected configuration instantly, ensure you want to do this and press activate again",
+                                severity="warning"
+                                )
+                    self.__activate_already_clicked = True
+                else:
+                    self.dismiss(f"{self.__title.split()[-1]}/activate".split())
             case "remove":
-                self.dismiss(f"home-manager remove-generations {self.__title.split()[4]}".split())
+                if not self.__remove_already_clicked:
+                    self.notify(title="Removing home-manager generation",
+                                message="Please note that this will completely delete this home-manager generation meaning it can never be switched to again, ensure you want to do this and press remove again",
+                                severity="warning"
+                                )
+                    self.__remove_already_clicked = True
+                else:
+                    self.dismiss(f"home-manager remove-generations {self.__title.split()[4]}".split())
 
     def compose(self) -> ComposeResult:
         """Defines what the home-manager screen will look like
@@ -598,6 +614,15 @@ class UI(App[list[str]]):
             with TabPane(title="generations"):
                 with TabbedContent():
                     with TabPane(title="System"):
+                        with Collapsible(collapsed=True, title="The build options"):
+                            yield Label("""\
+                            Switch -> Build the configuration, switch to it and set it as boot default
+                            Boot -> Build the configuration and set it as the one to boot to (but it doesn't switch to it)
+                            Test -> Build the configuration and switch to it (but it does not add it to the bootloader)
+                            Build -> Build the configuration into a result directory symlinked to the place of this build in the Nix store
+                            Dry-activate -> Build the configuration, but do not switch to it, showing the changes that would of occured
+                            Build-vm -> Build the configuration, and test it in a QEMU virtual machine
+                            """)
                         yield OptionList(
                             "switch",
                             "boot",
@@ -608,6 +633,15 @@ class UI(App[list[str]]):
                             id="system-build-options"
                         )
                     with TabPane(title="Home Manager"):
+                        with Collapsible(collapsed=True, title="The build options"):
+                            yield Label("""\
+                            Switch -> Build the home-manager configuration, and switch to it
+                            Build -> Build the home-manager configuration into a result directory symlinked to the place of this build in the Nix store
+
+                            For a speific generation
+                            Activate -> Activates the selected generation, switching to it
+                            Remove -> Deletes the selected generation
+                            """)
                         try:
                             generation_command = subprocess.run("home-manager generations".split(), capture_output=True,
                                                                 text=True, check=True)
