@@ -186,9 +186,14 @@ class UI(App[list[str]]):
                 options_location = options_location / i
             options_location = options_location / "data/options.json"
 
+        # Opening the options and storing the decomposer and file name
         self.__options = ParsingOptions(options_location)
         self.__file_name = file_name
         self.__decomposer = decomposer
+
+        # Creating the nixos-rebuild switch requirement for double clicking
+        self.__rebuild_switch_already_pressed: bool = False
+        
         super().__init__()
 
     def action_help(self) -> None:
@@ -572,7 +577,14 @@ class UI(App[list[str]]):
         if choice.option_list.id in ("system-build-options", "home-manager-gens"):
             match choice.option.prompt:
                 case "switch":
-                    self.app.exit("sudo nixos-rebuild switch".split())
+                    if not self.__rebuild_switch_already_pressed:
+                        self.notify(title="Switching NixOS configuration",
+                                    message="This will switch to the new NixOS configuration instantly, and set it as boot default. Ensure you want to do this and press switch again",
+                                    severity="warning",
+                                    )
+                        self.__rebuild_switch_already_pressed = True
+                    else:
+                        self.app.exit("sudo nixos-rebuild switch".split())
                 case "boot":
                     self.app.exit("sudo nixos-rebuild boot".split())
                 case "test":
