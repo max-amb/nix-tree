@@ -193,7 +193,7 @@ class UI(App[list[str]]):
 
         # Creating the nixos-rebuild switch requirement for double clicking
         self.__rebuild_switch_already_pressed: bool = False
-        
+
         super().__init__()
 
     def action_help(self) -> None:
