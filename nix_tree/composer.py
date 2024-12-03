@@ -14,10 +14,10 @@ from nix_tree.parsing import Types
 class ComposerIterator:
     """An iterator that composer uses to build the file"""
 
-    prepend: str = ""
-    previous_prepend: str = ""
-    lines: str = ""
-    previous_addition: str = ""
+    prepend: str = ""  # To store tabs
+    previous_prepend: str = ""  # To store prev tabs
+    lines: str = ""  # To store current progress
+    previous_addition: str = ""  # To store what data was previously added (for comments)
 
 
 class Composer:
@@ -65,12 +65,17 @@ class Composer:
 
         Args:
             node: Node - the starting node
+
+        Note:
+            The only difference between this function and the ordinary work out lines function
+            is adding of comments to the end of lines - which requires use of previous_addition
+            so that there is no confusing of comments for data 
         """
 
         comment_for_after = ""
         if node.get_comments():
             for comment in node.get_comments():
-                if comment[1]:  # Need to insert above current line
+                if comment[1]:  # Need to insert above current line (the true false variable in the comment tuple)
                     before_comment = self.__composer_iterator.lines.split("\n")[:-1]
                     post_comment = self.__composer_iterator.lines.split("\n")[-1]
                     before_comment_str = '\n'.join(before_comment) + "\n" + self.__composer_iterator.prepend + comment[0]
@@ -190,32 +195,50 @@ class Composer:
         Args:
             node: Node - the starting node
         """
-        if isinstance(node, ConnectorNode):
-            if len(node.get_connected_nodes()) > 1:
+
+        if isinstance(node, ConnectorNode): # Most will be connector nodes
+            if len(node.get_connected_nodes()) > 1: # To check if we should split it with curly braecs or not
+
+                # Managing the placing of the start of the group
                 if self.__composer_iterator.lines[-1] != ":":
-                    if self.__composer_iterator.lines[-1] == ".":
+                    if self.__composer_iterator.lines[-1] == ".": # if this is already part of a path like x. already exists
                         self.__composer_iterator.lines += node.get_name() + " = {\n"
-                    elif self.__composer_iterator.lines[-1] == "\n":
+                    elif self.__composer_iterator.lines[-1] == "\n": # new line so not part of path - means that the for tabs needs to be added
                         self.__composer_iterator.lines += self.__composer_iterator.prepend + node.get_name() + " = {\n"
                     else:
                         raise ErrorComposingFileFromTree(
                                 f"There was an error composing the file from the tree, here is what has been generated already {self.__composer_iterator.lines}"
                         )
                 else:
-                    self.__composer_iterator.lines += "\n\n{\n"
-                self.__composer_iterator.previous_prepend = self.__composer_iterator.prepend
-                self.__composer_iterator.prepend += "  "
+                    self.__composer_iterator.lines += "\n\n{\n" # If it is a new file! (only run on first iteration)
+                    self.__composer_iterator.previous_prepend = self.__composer_iterator.prepend # need to indent in
+                    self.__composer_iterator.prepend += "  "
+
+                # indent managing
+                self.__composer_iterator.previous_prepend = self.__composer_iterator.prepend # Updating the prepend (to go down indent later)
+                self.__composer_iterator.prepend += "  " # indenting a bit more - we just opened curly braces!
+
                 for singular_node in node.get_connected_nodes():
+                    # Recursive calling!
                     self.__work_out_lines_no_comments(singular_node)
+
+
                 if self.__composer_iterator.previous_prepend != "":
-                    self.__composer_iterator.lines += self.__composer_iterator.previous_prepend + "};\n"
-                else:  # Then it is the end of the file
+                    self.__composer_iterator.lines += self.__composer_iterator.previous_prepend + "};\n" # Need to shut the group
+                else:  # Then it is the end of the file as we have shut the final group (the large {})
                     pass
+
+                # Updating prepends again to go back
                 self.__composer_iterator.prepend = self.__composer_iterator.previous_prepend
                 self.__composer_iterator.previous_prepend = self.__composer_iterator.previous_prepend[2:]
+
+                # This is to make the base indent level more spaced out
                 if len(self.__composer_iterator.prepend) == 2:
                     self.__composer_iterator.lines += "\n"
-            elif len(node.get_connected_nodes()) == 1:
+
+            elif len(node.get_connected_nodes()) == 1: # If there is only one child
+
+                # Slightly different to above - no curly brace
                 if self.__composer_iterator.lines[-1] != ":":
                     if self.__composer_iterator.lines[-1] == ".":
                         self.__composer_iterator.lines += node.get_name() + "."
@@ -227,19 +250,22 @@ class Composer:
                         )
                 else:
                     self.__composer_iterator.lines += "\n\n{\n"
-                    self.__composer_iterator.previous_prepend = self.__composer_iterator.prepend
+                    self.__composer_iterator.previous_prepend = self.__composer_iterator.prepend # need to indent in
                     self.__composer_iterator.prepend += "  "
+
+                # call it for the singular node
                 self.__work_out_lines_no_comments(node.get_connected_nodes()[0])
             else:
                 pass
         elif isinstance(node, VariableNode):
+            # getting "x =" from "y.z.x = gosh" node
             data = node.get_name().split(".")[-1] + " = "
 
             if node.get_type() == Types.LIST:
-                if "'" not in node.get_data():
+                if "'" not in node.get_data(): # If it isnt a list of strings
                     data_as_list = node.get_data().split(" ")
                     data_as_list = data_as_list[1:-1]
-                    if len(data_as_list) >= 3:
+                    if len(data_as_list) >= 3: # Splitting the list to multiple lines if longer than 2 elements
                         data += "[\n"
                         for list_item in data_as_list:
                             data += self.__composer_iterator.prepend + "  " + list_item + "\n"
@@ -247,7 +273,7 @@ class Composer:
                     else:
                         data += node.get_data()
                 else:
-                    data_as_list = node.get_data().split("' '")
+                    data_as_list = node.get_data().split("' '") # note the different splitting required
                     data_as_list = data_as_list[1:-1]
                     if len(data_as_list) >= 3:
                         data += "[\n"
@@ -268,10 +294,11 @@ class Composer:
                 data = re.sub(rf"\({with_clause}\)\.", "", data)
                 data = data.split("=")[0] + "= with " + with_clause + ";" + data.split("=")[1]
 
-            if self.__composer_iterator.lines[-1] == ".":
+            # handling adding it in
+            if self.__composer_iterator.lines[-1] == ".": # end of a connector like x.y now adding z = enable
                 self.__composer_iterator.lines += data + ";\n"
             elif self.__composer_iterator.lines[-1] == "\n":
-                self.__composer_iterator.lines += self.__composer_iterator.prepend + data + ";\n"
+                self.__composer_iterator.lines += self.__composer_iterator.prepend + data + ";\n" # indenting!!!!
             else:
                 raise ErrorComposingFileFromTree(
                     f"There was an error composing the file from the tree, the previous character was unexpected, here is what there is currently: {self.__composer_iterator.lines}"

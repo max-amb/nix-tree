@@ -194,6 +194,24 @@ class Decomposer:
         self.__tree.add_branch(contents=f"headers=[ {', '.join(headers)} ]")
 
     def __connecting_spaced_lines(self, file: list[str], iterator: int) -> tuple[list[str], int]:
+        """Connects spaced lines - lines with spaces in "x y"
+
+        Args:
+            file: list[str] - the file split on spaces
+            iterator: int - where the prepare the file function is currently looking
+
+        Returns:
+            tuple[list[str], int] - the updated file and updated position of the iterator
+
+        Note:
+            This function needs to update both the file and the iterator as it modifies both while
+            connecting strings with spaces in.
+
+            The regex searches are negative lookaheads they are checking for a bit of the file list that
+            starts with a string sign and then does not end with one - which means it must have been split
+            on a space in the middle.
+        """
+
         if re.search(r"^''(?!.*'').*", file[iterator]):
             j = iterator + 1
             while j < len(file):
@@ -441,12 +459,19 @@ class Decomposer:
 
         Returns:
             list - the equals locations list with line numbers
+
+        Note:
+            This needs to be done to map to the comments dictionary which attaches
+            comments to line numbers
+            The replace functions are so the program can avoid = in strings which obviously
+            should be avoided
         """
         def replace_single_speech(match):
             return "'" + 'A' * (len(match.group(0))-2) + "'"
 
         def replace_double_speech(match):
             # As double quote strings can have new lines in them
+            # e.g. ''abcd\n=gosh'' would go to ''AAAA\nAAAAA''
             string = "''"
             content = match.group(0)
             for char in content:
