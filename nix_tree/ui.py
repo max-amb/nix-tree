@@ -656,7 +656,7 @@ class UI(App[list[str]]):
                             """)
                         try:
                             generation_command = subprocess.run("home-manager generations".split(), capture_output=True,
-                                                                text=True, check=True)
+                                                                text=True, check=True, shell=True)
                             yield OptionList(*generation_command.stdout.split("\n")[:-1], id="home-manager-gens")
                             with Horizontal(id="buttons"):
                                 yield Button(label="switch", variant="success", id="switch_hm")
