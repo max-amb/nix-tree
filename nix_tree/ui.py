@@ -656,12 +656,12 @@ class UI(App[list[str]]):
                             """)
                         try:
                             generation_command = subprocess.run("home-manager generations".split(), capture_output=True,
-                                                                text=True, check=True, shell=True)
+                                                                text=True, check=True)
                             yield OptionList(*generation_command.stdout.split("\n")[:-1], id="home-manager-gens")
                             with Horizontal(id="buttons"):
                                 yield Button(label="switch", variant="success", id="switch_hm")
                                 yield Button(label="build", id="build_hm")
-                        except subprocess.CalledProcessError:  # If the user does not have home manager installed
+                        except FileNotFoundError:  # If the user does not have home manager installed
                             yield Static("Home manager options unavailable - first install home-manager!")
             with TabPane(title="operations stack", id="operations_stack_tab"):
                 yield ListView(id="operations_stack")
