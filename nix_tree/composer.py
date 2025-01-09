@@ -327,6 +327,7 @@ class Composer:
                     else:
                         self.__composer_iterator.lines += header.strip() + "\n"
                 self.__composer_iterator.lines += "}:"
+                self.__composer_iterator.previous_addition = "}:"
             else:
                 self.__composer_iterator.lines += "{" + headers + "}:"
                 self.__composer_iterator.previous_addition = "}:"
