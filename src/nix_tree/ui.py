@@ -571,7 +571,9 @@ class UI(App[list[str]]):
                 cmd: list[str] | None - the users choice (None if they chose nothing)
             """
 
-            self.app.exit(cmd)
+            if cmd != None:
+                with self.suspend():
+                    os.system(' '.join(cmd))
 
         if choice.option_list.id in ("system-build-options", "home-manager-gens"):
             match choice.option.prompt:
@@ -583,15 +585,15 @@ class UI(App[list[str]]):
                                     )
                         self.__rebuild_switch_already_pressed = True
                     else:
-                        self.app.exit("sudo nixos-rebuild switch".split())
+                        with self.suspend(): os.system("sudo nixos-rebuild switch")
                 case "boot":
-                    self.app.exit("sudo nixos-rebuild boot".split())
+                    with self.suspend(): os.system("sudo nixos-rebuild boot")
                 case "test":
-                    self.app.exit("sudo nixos-rebuild test".split())
+                    with self.suspend(): os.system("sudo nixos-rebuild test")
                 case "dry-activate":
-                    self.app.exit("sudo nixos-rebuild dry-activate".split())
+                    with self.suspend(): os.system("sudo nixos-rebuild dry-activate")
                 case "build-vm":
-                    self.app.exit("sudo nixos-rebuild build-vm".split())
+                    with self.suspend(): os.system("sudo nixos-rebuild build-vm")
                 case _:  # Home-manager
                     self.app.push_screen(HomeManagerGenerationScreen(str(choice.option.prompt)), handle_home_manager_choice)
 
