@@ -1,23 +1,19 @@
-[tool.poetry]
+[project]
 name = "nix-tree"
 version = "0.1.0"
 description = "A tool for viewing and editing your nix configuration as a tree"
-authors = ["Max Ambaum <max_a@e.email>"]
+authors = [ { name = "Max Ambaum", email = "max_a@e.email" } ]
 license = "GPL-3.0-only"
 readme = "README.md"
+requires-python = ">=3.13"
+dependencies = [
+    "pytest>=9.1.1",
+    "textual>=8.2.7",
+]
 
-[tool.poetry.dependencies]
-python = "^3.12"
-linkify-it-py = "^2.0.3"
-textual = "^0.79.1"
-hatchling = "^1.25.0"
-
-[tool.poetry.group.dev.dependencies]
-pytest = "^8.3.3"
+[project.scripts]
+nix-tree = "nix_tree:main"
 
 [build-system]
-requires = ["poetry-core"]
-build-backend = "poetry.core.masonry.api"
-
-[tool.poetry.scripts]
-nix-tree = 'nix_tree.__main__:main'
+requires = ["uv_build>=0.11.0,<0.12.0"]
+build-backend = "uv_build"

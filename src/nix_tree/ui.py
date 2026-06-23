@@ -3,6 +3,7 @@
 import subprocess
 from pathlib import Path
 import re
+import os
 
 from textual.app import App, ComposeResult
 from textual.containers import Horizontal, Vertical, Center
@@ -173,11 +174,8 @@ class UI(App[list[str]]):
         path_of_executable = Path(__file__).parts
         options_location = Path()
         if 'store' in path_of_executable:  # If it is being run as a flake
-            for i in path_of_executable:
-                if i == "lib":
-                    break
-                options_location = options_location / i
-            options_location = options_location / "data/options.json"
+            if os.environ.get("OPTIONS_LOC") != None:
+                options_location = Path(os.environ["OPTIONS_LOC"])
         else:  # If it is not being run as a flake
             for i in path_of_executable:
                 if i == "nix-tree":
@@ -244,9 +242,10 @@ class UI(App[list[str]]):
             else:
                 raise ErrorComposingFileFromTree(message="Was unable to parse actions to apply to tree")
             full_path = path + "=" + variable
-        else:  # bool and unique
+        else:  # bool, unique, int
             full_path = action.split(" ")[1]
             path = full_path.split("=")[0]
+            variable = full_path.split("=")[1]
         return path, variable, full_path
 
     def action_undo(self, empty_command: bool = False) -> None:
