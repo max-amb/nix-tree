@@ -1,7 +1,10 @@
 # Nix-tree
 This is an optionated tool for viewing and editing your nix configuration as a tree
 
-## RUN 🏃
+## Demonstration
+[![program use demonstration](https://asciinema.org/a/kyHL6MnztiuwjNYB.svg)](https://asciinema.org/a/kyHL6MnztiuwjNYB)
+
+## Run 🏃
 * Note this tool currently is only tested for NixOS, so if you aren't on NixOS use it at your peril!
 
 #### Enabling flakes ❄️
@@ -30,16 +33,6 @@ nix run 'github:max-amb/nix-tree' <your filename>
 * There are two options which you can enable when running the program
     * `-w` which will enable writing over of the original file
     * `-c` which will enable comments being copied over
-
-## Screenshots 📸
-* The main screen displaying the tree:
-![Tree screen](./screenshots/main_screen.png)
-* The screen for generation management:
-![Generation management screen](./screenshots/generations_screen.png)
-* The screen you see when you select a variable:
-![Variable screen](./screenshots/variable_screen.png)
-* The screen you see when you select a section:
-![Section screen](./screenshots/section_screen.png)
 
 ## The options.json file ⚙️
 In the data directory there is an `options.json` file.
