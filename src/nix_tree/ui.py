@@ -671,6 +671,7 @@ class UI(App[list[str]]):
         """sets the title of the page to Nix tree"""
 
         self.title = "Nix tree"
+        self.theme = "solarized-light"
 
 
 def start_ui(file_location: str, write_over: bool, comments: bool) -> None:
